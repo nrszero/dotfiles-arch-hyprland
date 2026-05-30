@@ -1,0 +1,8 @@
+hyprland hypridle hyprshot greetd quickshell kitty nvim yazi fastfetch btop rofi mpv mpv-mpris pavucontrol
+stow rsync
+nvidia-open-dkms nvidia-settings lib32-nvidia-utils mangohud lib32-mangohud steam lutris prismlauncher wine winetricks
+openrazer-daemon python-openrazer polychromatic xone-dkms sunshine
+yay fd ripgrep fzf zoxide tree-sitter-cli pipewire pipewire-alsa pipewire-pulse wireplumber
+bluez bluez-utils networkmanager tailscale discord google-chrome visual-studio-code-bin unityhub krita imagemagick
+noto-fonts noto-fonts-emoji otf-font-awesome python-pywal
+base-devel git git-lfs cmake meson npm

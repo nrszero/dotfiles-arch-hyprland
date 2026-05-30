@@ -1,0 +1,16 @@
+[mgr]
+show_hidden = true
+
+[opener]
+# Define the kitten icat opener
+# --hold keeps the image visible until you press a key
+view_icat = [
+	{ run = 'kitten icat --hold "$@"', block = true, desc = "View with icat" }
+]
+
+[open]
+prepend_rules = [
+	# Map image types to the icat opener
+	{ mime = "image/*", use = "view_icat" },
+	
+]

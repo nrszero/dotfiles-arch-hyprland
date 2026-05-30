@@ -1,0 +1,45 @@
+hl.env("QT_QPA_PLATFORM", "wayland")
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("XDG_SESSION_TYPE", "wayland")
+
+hl.on("hyprland.start", function()
+    hl.exec_cmd("awww-daemon")
+    hl.exec_cmd("/etc/awww/awww_randomize.sh /usr/share/backgrounds/")
+    hl.exec_cmd("quickshell -p /etc/greetd/QuickshellGreeter.qml > /var/tmp/quickshell-greeter.log 2>&1; hyprctl dispatch exit")
+end)
+
+hl.config({
+    decoration = {
+        blur = {
+            enabled = true,
+            size = 8,
+            passes = 5,
+            vibrancy = 0.1696,
+            popups = true,
+            popups_ignorealpha = 0.1,
+        },
+    },
+})
+
+hl.device({
+    name = "epic-mouse-v1",
+    sensitivity = -0.5,
+})
+
+hl.config({
+    misc = {
+        disable_hyprland_logo = true,
+        disable_splash_rendering = true,
+        disable_hyprland_guiutils_check = true,
+    },
+})
+
+hl.layer_rule({
+    match = {
+        namespace = "quickshell",
+    },
+    blur = true,
+    blur_popups = true,
+    ignore_alpha = 0.1,
+})
+

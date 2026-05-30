@@ -1,0 +1,14 @@
+[app]
+overall = { bg = "#000000" }
+
+[manager]
+
+[filetype]
+rules = [
+    # 1. Folders/Directories
+    { url = "*/", fg = "#d8dee9" },
+
+    # 2. All files (Fallback)
+    #{ url = "*",  fg = "#78aaff" },
+]
+
