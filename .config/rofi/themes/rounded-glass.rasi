@@ -1,0 +1,12 @@
+/* 
+CUSTOM ROUNDED THEME FOR ROFI 
+Use pywal for colors .cache/wal/colors-rounded-glass.rasi
+*/
+
+@import "~/.cache/wal/colors-rounded-glass.rasi"
+
+@import "~/.config/rofi/themes/template/rounded-glass-template.rasi"
+
+element selected {
+    text-color: @bg1;
+}
