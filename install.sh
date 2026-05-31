@@ -12,16 +12,12 @@ install_packages() {
 }
 
 stow_user() {
-  log "Stowing user configs..."
-  for pkg in hypr quickshell kitty nvim rofi yazi fastfetch mangohud wal btop mpv; do
-    if [ -d "$DOTFILES/$pkg" ]; then
-      stow -v -t ~ --restow --adopt "$pkg"
-    fi
-  done
+  log "Stowing user configs (.config/)..."
+  stow -v -t ~ --restow --adopt .config
 }
 
 stow_system() {
-  log "Stowing system files (greetd)..."
+  log "Stowing system files (etc/)..."
   if [ -d "$DOTFILES/etc" ]; then
     sudo stow -v -t / --restow --adopt etc
   fi
