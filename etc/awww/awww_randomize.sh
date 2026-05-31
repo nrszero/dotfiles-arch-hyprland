@@ -60,7 +60,7 @@ export AWWW_TRANSITION_FPS="${AWWW_TRANSITION_FPS:-60}"
 export AWWW_TRANSITION_STEP="${AWWW_TRANSITION_STEP:-2}"
 
 while true; do
-	mapfile -t images < <(find "$1" -type f | shuf)
+	mapfile -t images < <(find -L "$1" -type f | shuf)
 
 	for img in "${images[@]}"; do
 		IS_FULLSCREEN=$(hyprctl clients | grep 'fullscreen: 2')

@@ -21,10 +21,15 @@ stow_system() {
   if [ -d "$DOTFILES/etc" ]; then
     chmod o+rx "$HOME"
     chmod -R 755 "$DOTFILES/etc"
+    chmod -R 755 "$DOTFILES/wallpapers"
     chmod o+rx "$DOTFILES"
 
     sudo stow -D etc 2>/dev/null || true
     sudo stow -v --target /etc --restow --adopt etc
+    
+    sudo mkdir -p /usr/share/wallpapers
+    sudo stow -D wallpapers 2>/dev/null || true
+    sudo stow -v --target /usr/share/wallpapers --restow --adopt wallpapers
     
   fi
 }
