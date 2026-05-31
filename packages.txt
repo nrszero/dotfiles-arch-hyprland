@@ -1,4 +1,3 @@
-# Core Hyprland + Desktop
 hyprland
 hypridle
 hyprshot
@@ -15,8 +14,6 @@ mpv-mpris
 pavucontrol
 stow
 rsync
-
-# NVIDIA + Gaming
 nvidia-open-dkms
 nvidia-settings
 lib32-nvidia-utils
@@ -28,14 +25,10 @@ prismlauncher
 wine
 winetricks
 sunshine
-
-# Hardware / Peripherals
 openrazer-daemon
 python-openrazer
 polychromatic
 xone-dkms
-
-# Utilities
 yay
 fd
 ripgrep
@@ -56,14 +49,10 @@ visual-studio-code-bin
 unityhub
 krita
 imagemagick
-
-# Fonts & Themes
 noto-fonts
 noto-fonts-emoji
 otf-font-awesome
 python-pywal
-
-# Development
 base-devel
 git
 git-lfs

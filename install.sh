@@ -13,13 +13,13 @@ install_packages() {
 
 stow_user() {
   log "Stowing user configs (.config/)..."
-  stow -v -t ~ --restow --adopt .config
+  stow -v --target ~/.config --restow --adopt .config
 }
 
 stow_system() {
   log "Stowing system files (etc/)..."
   if [ -d "$DOTFILES/etc" ]; then
-    sudo stow -v -t / --restow --adopt etc
+    sudo stow -v --target / --restow --adopt etc
   fi
 }
 
