@@ -38,7 +38,7 @@ main() {
   install_packages
   stow_user
   stow_system
-  log "✅ Dotfiles installed! Reboot or run hyprctl reload"
+  log "Dotfiles installed! Reboot or run hyprctl reload"
 }
 
 main "$@"

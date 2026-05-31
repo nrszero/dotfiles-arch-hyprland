@@ -55,6 +55,9 @@ if [ $# -lt 1 ] || [ ! -d "$1" ]; then
 	exit 1
 fi
 
+STATE_FILE="/tmp/current_wallpaper_folder.txt"
+echo "$(basename "$1")" > "$STATE_FILE" 2>/dev/null || true
+
 RESIZE_TYPE="crop"
 export AWWW_TRANSITION_FPS="${AWWW_TRANSITION_FPS:-60}"
 export AWWW_TRANSITION_STEP="${AWWW_TRANSITION_STEP:-2}"
