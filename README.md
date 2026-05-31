@@ -8,7 +8,9 @@ Managed with GNU Stow. Includes a custom Quickshell greeter running under greetd
 
 - Hyprland window manager with Lua configuration
 - greetd + Hyprland + Quickshell login screen
-- awww wallpaper daemon with randomizer on login
+- awww wallpaper daemon with randomizer script
+- Shortcut SUPER + N to change wallpaper in /usr/share/wallpapers
+- Shortcut SUPER + SHIFT + N to change folder in /usr/share/wallpapers/
 - Clean separation of user (`~/.config`) and system (`/etc`) configs
 - One-command installation
 
