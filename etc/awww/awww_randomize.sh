@@ -55,15 +55,33 @@ if [ $# -lt 1 ] || [ ! -d "$1" ]; then
 	exit 1
 fi
 
-STATE_FILE="/tmp/current_wallpaper_folder.txt"
-echo "$(basename "$1")" > "$STATE_FILE" 2>/dev/null || true
+WALLPAPER_BASE="/usr/share/wallpapers"
+STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
+
+# If hyprland autostart gave us the parent directory, load the last used subfolder instead
+if [ "$1" = "$WALLPAPER_BASE" ]; then
+    if [ -f "$STATE_FILE" ]; then
+        FOLDER_NAME=$(cat "$STATE_FILE" | tr -d '\n')
+        TARGET_DIR="$WALLPAPER_BASE/$FOLDER_NAME"
+        echo "[$(date '+%H:%M:%S')] Using saved folder: $FOLDER_NAME" >> "$LOG_FILE"
+    else
+        # First run ever → pick first folder alphabetically
+        FOLDER_NAME=$(find -L "$WALLPAPER_BASE" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | head -n1)
+        TARGET_DIR="$WALLPAPER_BASE/$FOLDER_NAME"
+        echo "[$(date '+%H:%M:%S')] No saved folder found, using first: $FOLDER_NAME" >> "$LOG_FILE"
+    fi
+else
+    TARGET_DIR="$1"
+fi
+
+echo "$(basename "$TARGET_DIR")" > "$STATE_FILE" 2>/dev/null || true
 
 RESIZE_TYPE="crop"
 export AWWW_TRANSITION_FPS="${AWWW_TRANSITION_FPS:-60}"
 export AWWW_TRANSITION_STEP="${AWWW_TRANSITION_STEP:-2}"
 
 while true; do
-	mapfile -t images < <(find -L "$1" -type f | shuf)
+	mapfile -t images < <(find -L "$TARGET_DIR" -type f | shuf)
 
 	for img in "${images[@]}"; do
 		IS_FULLSCREEN=$(hyprctl clients | grep 'fullscreen: 2')

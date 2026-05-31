@@ -2,7 +2,7 @@
 # Cycles to the next wallpaper folder in /usr/share/wallpapers
 
 WALLPAPER_BASE="/usr/share/wallpapers"
-STATE_FILE="/tmp/current_wallpaper_folder.txt"
+STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
 
 # Get sorted list of subfolder names
 mapfile -t folders < <(find -L "$WALLPAPER_BASE" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
