@@ -55,6 +55,6 @@ hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 hl.env("GBM_BACKEND", "nvidia-drm")
 hl.env("QT_QPA_PLATFORM", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
-hl.env("GTK_THEME", "Adwaita:dark")
+hl.env("GTK_THEME", "Adwaita-dark")
 hl.env("EDITOR", "nvim")
 

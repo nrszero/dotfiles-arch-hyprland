@@ -24,10 +24,7 @@ lutris
 prismlauncher
 wine
 winetricks
-sunshine
 openrazer-daemon
-python-openrazer
-polychromatic
 xone-dkms
 yay
 fd
@@ -42,11 +39,9 @@ wireplumber
 bluez
 bluez-utils
 networkmanager
-tailscale
 discord
 google-chrome
 visual-studio-code-bin
-unityhub
 krita
 imagemagick
 noto-fonts
@@ -59,3 +54,5 @@ git-lfs
 cmake
 meson
 npm
+nwg-look
+gnome-themes-extra
