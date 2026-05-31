@@ -167,4 +167,4 @@ configuration {
   }
 }
 
-@theme "/home/nrszero/.config/rofi/themes/rounded-glass.rasi"
+@theme "~/.config/rofi/themes/rounded-glass.rasi"
