@@ -281,12 +281,6 @@ hl.layer_rule({
         namespace = "rofi",
     },
     blur = true,
-})
-
-hl.layer_rule({
-    match = {
-        namespace = "rofi",
-    },
     ignore_alpha = 0.1,
 })
 
@@ -295,19 +289,7 @@ hl.layer_rule({
         namespace = "quickshell",
     },
     blur = true,
-})
-
-hl.layer_rule({
-    match = {
-        namespace = "quickshell",
-    },
     blur_popups = true,
-})
-
-hl.layer_rule({
-    match = {
-        namespace = "quickshell",
-    },
     ignore_alpha = 0.1,
 })
 
