@@ -19,7 +19,13 @@ stow_user() {
 stow_system() {
   log "Stowing system files (etc/)..."
   if [ -d "$DOTFILES/etc" ]; then
+    chmod o+rx "$HOME"
+    chmod -R 755 "$DOTFILES/etc/greetd"
+    chmod o+rx "$DOTFILES"
+
+    sudo stow -D etc 2>/dev/null || true
     sudo stow -v --target /etc --restow --adopt etc
+    
   fi
 }
 
