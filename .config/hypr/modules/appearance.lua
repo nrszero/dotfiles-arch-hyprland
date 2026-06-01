@@ -85,27 +85,6 @@ hl.animation({ leaf = "borderangle", enabled = true, speed = 1, bezier = "simple
 hl.animation({ leaf = "fade", enabled = true, speed = 2, bezier = "simple" })
 hl.animation({ leaf = "workspaces", enabled = false })
 
-hl.workspace_rule({
-    workspace = 1,
-    monitor = "HDMI-A-1",
-    default = true,
-})
-
-hl.workspace_rule({
-    workspace = 2,
-    monitor = "HDMI-A-1",
-})
-
-hl.workspace_rule({
-    workspace = 3,
-    monitor = "DP-1",
-})
-
-hl.workspace_rule({
-    workspace = 4,
-    monitor = "DP-1",
-})
-
 hl.config({
     dwindle = {
         preserve_split = true,

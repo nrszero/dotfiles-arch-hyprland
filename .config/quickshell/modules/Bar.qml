@@ -40,7 +40,7 @@ PanelWindow {
         console.log(`[Bar] WARNING: No matching Hyprland monitor found for ${root.screenModel.name}`);
         return null;
     }
-
+    
     GlobalShortcut {
         name: "toggleBar" // This name identifies the action
         onPressedChanged: {
@@ -57,7 +57,27 @@ PanelWindow {
             }
         }
     }
-   
+    
+    // === DYNAMIC WORKSPACES (fully reactive - matches WORKSPACES variable) ===
+    Component.onCompleted: {
+        Hyprland.refreshWorkspaces()
+        console.log("[Bar] Initial refreshWorkspaces() called - total workspaces:", 
+                    Hyprland.workspaces.values ? Hyprland.workspaces.values.length : 0)
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.event === "workspace" ||
+                event.event === "createworkspace" ||
+                event.event === "destroyworkspace" ||
+                event.event === "focusedmon") {
+                Hyprland.refreshWorkspaces()
+                console.log("[Bar] Raw event triggered refresh:", event.event)
+            }
+        }
+    }
+
     property int monitorIndex: hMonitor ? hMonitor.id : 0
     // property int baseWs: monitorIndex * 10
     property int baseWs: monitorIndex
@@ -120,9 +140,9 @@ PanelWindow {
                 anchors.centerIn: parent
                 spacing: 6
                 
-                // --- STANDARD WORKSPACES (1-4) ---
+                // --- STANDARD WORKSPACES ---
                 Repeater {
-                    model: 4
+                    model: Hyprland.workspaces
                     delegate: Rectangle {
                         width: isActive ? 28 : 22
                         height: 22

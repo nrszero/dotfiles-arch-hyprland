@@ -5,42 +5,25 @@ TERMINAL = "kitty"
 BROWSER = "google-chrome-stable --ozone-platform=wayland --ozone-platform-hint=auto"
 FILE_MANAGER = "kitty yazi"
 MENU = "rofi -show combi -modes combi -combi-modes drun,run"
-WORKSPACES = 4
+WORKSPACES = 6
 
 require("modules.autostart")
 require("modules.input")
 require("modules.appearance")
 require("modules.keybinds")
+require("modules.workspaces")
 
 ------------------
 ---- MONITORS ----
 ------------------
-local monitor0 = "HDMI-A-1"
-local monitor1 = "DP-1"
-
 -- See https://wiki.hypr.land/Configuring/Monitors/
 
 hl.monitor({
-    output   = monitor0,
-    mode     = "2560x1440@360",
-    position = "0x0",
-    scale    = 1,
-    bitdepth = 10,
-})
-
-hl.monitor({
-    output   = monitor1,
-    mode     = "2560x1440@360",
-    position = "2560x0",
-    scale    = 1,
-    bitdepth = 10,
-})
-
-hl.monitor({
     output   = "",
-    mode     = "preferred",
+    mode     = "highrr",
     position = "auto",
     scale    = 1,
+    bitdepth = 10,
 })
 
 -------------------------------
