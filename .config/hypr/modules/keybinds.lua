@@ -35,10 +35,9 @@ hl.bind(MAIN_MOD .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }))
 hl.bind(MAIN_MOD .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))
 
 -- Move active window to a workspace
-hl.bind(MAIN_MOD .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }))
-hl.bind(MAIN_MOD .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }))
-hl.bind(MAIN_MOD .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }))
-hl.bind(MAIN_MOD .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }))
+for i = 0, WORKSPACES do
+    hl.bind(MAIN_MOD .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
+end
 
 -- Switch workspaces
 for i = 0, WORKSPACES do
