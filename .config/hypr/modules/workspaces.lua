@@ -12,6 +12,7 @@ local function setup_dynamic_workspaces()
         hl.workspace_rule({
             workspace = i,
             monitor   = LEFT_MONITOR,
+            persistent = true,
             default   = (i == 1)
         })
     end
@@ -21,7 +22,8 @@ local function setup_dynamic_workspaces()
         print(string.format("[Dynamic WS]   → workspace %d → %s", i, RIGHT_MONITOR))
         hl.workspace_rule({
             workspace = i,
-            monitor   = RIGHT_MONITOR
+            monitor   = RIGHT_MONITOR,
+            persistent = true
         })
     end
 end
