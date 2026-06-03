@@ -59,25 +59,64 @@ PanelWindow {
     }
     
     // === DYNAMIC WORKSPACES (fully reactive - matches WORKSPACES variable) ===
+    property int totalWorkspaces: 6
+
     Component.onCompleted: {
         Hyprland.refreshWorkspaces()
-        console.log("[Bar] Initial refreshWorkspaces() called - total workspaces:", 
-                    Hyprland.workspaces.values ? Hyprland.workspaces.values.length : 0)
+        updateTotalWorkspaces()
+        console.log("[Bar] Initial totalWorkspaces =", totalWorkspaces)
+    }
+
+    function updateTotalWorkspaces() {
+        if (!Hyprland.workspaces || !Hyprland.workspaces.values) {
+            console.log("[Bar] WARNING: No workspaces data yet, using fallback 6")
+            totalWorkspaces = 6
+            return
+        }
+
+        let maxId = 0
+        for (let ws of Hyprland.workspaces.values) {
+            if (ws && ws.id > 0 && ws.id > maxId) {
+                maxId = ws.id
+            }
+        }
+        totalWorkspaces = maxId > 0 ? maxId : 6
+        console.log(`[Bar] Detected ${totalWorkspaces} workspaces`)
+    }
+    
+    // Add a small delay timer to allow Hyprland to garbage collect old workspaces
+    Timer {
+        id: reloadTimer
+        interval: 250 // 250ms is usually plenty of time for Hyprland to clean up
+        repeat: false
+        onTriggered: {
+            Hyprland.refreshWorkspaces()
+            updateTotalWorkspaces()
+            console.log("[Bar] Delayed refresh completed after config reload.")
+        }
     }
 
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.event === "workspace" ||
-                event.event === "createworkspace" ||
-                event.event === "destroyworkspace" ||
-                event.event === "focusedmon") {
+            if (event.name === "workspace" ||
+                event.name === "createworkspace" ||
+                event.name === "destroyworkspace" ||
+                event.name === "focusedmon") {
+                    
+                // For normal navigation, update instantly
                 Hyprland.refreshWorkspaces()
-                console.log("[Bar] Raw event triggered refresh:", event.event)
+                updateTotalWorkspaces()
+                console.log("[Bar] Raw event triggered instant refresh:", event.name)
+                
+            } else if (event.name === "configreloaded") {
+                // For reloads, trigger the delay
+                reloadTimer.restart()
+                console.log("[Bar] Config reloaded, starting delayed refresh...")
             }
         }
     }
-
+    
     property int monitorIndex: hMonitor ? hMonitor.id : 0
     // property int baseWs: monitorIndex * 10
     property int baseWs: monitorIndex
@@ -142,7 +181,7 @@ PanelWindow {
                 
                 // --- STANDARD WORKSPACES ---
                 Repeater {
-                    model: Hyprland.workspaces
+                    model: root.totalWorkspaces
                     delegate: Rectangle {
                         width: isActive ? 28 : 22
                         height: 22
