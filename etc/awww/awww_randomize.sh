@@ -61,7 +61,7 @@ STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
 # If hyprland autostart gave us the parent directory, load the last used subfolder instead
 if [ "$1" = "$WALLPAPER_BASE" ]; then
     if [ -f "$STATE_FILE" ]; then
-        FOLDER_NAME=$(cat "$STATE_FILE" | tr -d '\n')
+        read -r FOLDER_NAME < "$STATE_FILE"
         TARGET_DIR="$WALLPAPER_BASE/$FOLDER_NAME"
         echo "[$(date '+%H:%M:%S')] Using saved folder: $FOLDER_NAME" >> "$LOG_FILE"
     else
@@ -86,7 +86,10 @@ while true; do
 	for img in "${images[@]}"; do
 		IS_FULLSCREEN=$(hyprctl clients | grep 'fullscreen: 2')
 		if [ -n "$IS_FULLSCREEN" ]; then
-			sleep 1
+            sleep 5 </dev/null &
+			SLEEP_PID=$!
+			echo "$SLEEP_PID" > "$PID_FILE"
+			wait $SLEEP_PID
 		else
 			# Atomic Image Backup
 			cp "$img" "/var/tmp/greeter-wallpaper.tmp"
