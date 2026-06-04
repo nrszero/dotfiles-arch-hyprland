@@ -5,7 +5,7 @@ hl.bind(MAIN_MOD .. " + V", hl.dsp.window.float())
 hl.bind(MAIN_MOD .. " + P", hl.dsp.window.pseudo())
 hl.bind(MAIN_MOD .. " + O", hl.dsp.layout("togglesplit"))
 hl.bind(MAIN_MOD .. " + F", hl.dsp.window.fullscreen())
-hl.bind(MAIN_MOD .. " + N", hl.dsp.exec_cmd("kill $(cat /tmp/awww_sleep_$(whoami).pid) 2>/dev/null"))
+hl.bind(MAIN_MOD .. " + N", hl.dsp.exec_cmd("kill $(cat $XDG_RUNTIME_DIR/awww_sleep.pid) 2>/dev/null"))
 hl.bind(MAIN_MOD .. " + SHIFT + N", hl.dsp.exec_cmd("~/.config/hypr/scripts/cycle_wallpaper_folder.sh"))
 
 -- Application keybinds

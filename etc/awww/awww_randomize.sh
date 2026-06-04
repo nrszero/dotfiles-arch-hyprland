@@ -4,8 +4,9 @@
 
 DEFAULT_INTERVAL=600 # In seconds
 CURRENT_USER=$(whoami)
-LOG_FILE="/tmp/awww_wallpaper_${CURRENT_USER}.log"
-PID_FILE="/tmp/awww_sleep_${CURRENT_USER}.pid"
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/var/tmp}" # resolves to /run/user/*
+LOG_FILE="$RUNTIME_DIR/awww_wallpaper.log"
+PID_FILE="$RUNTIME_DIR/awww_sleep.pid"
 
 # Initialize log file
 echo "--- Starting awww_randomize script for $CURRENT_USER ---" > "$LOG_FILE"
