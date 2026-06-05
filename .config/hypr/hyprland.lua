@@ -14,6 +14,7 @@ require("modules.input")
 require("modules.appearance")
 require("modules.keybinds")
 require("modules.workspaces")
+require("modules.environment")
 
 ------------------
 ---- MONITORS ----
@@ -43,19 +44,4 @@ hl.monitor({
     position = "auto",
     scale    = 1,
 })
-
--------------------------------
----- ENVIRONMENT VARIABLES ----
--------------------------------
--- See https://wiki.hypr.land/Configuring/Environment-variables/
-
-hl.env("XCURSOR_SIZE", 24)
-hl.env("HYPRCURSOR_SIZE", 24)
-hl.env("LIBVA_DRIVER_NAME", "nvidia")
-hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-hl.env("GBM_BACKEND", "nvidia-drm")
-hl.env("QT_QPA_PLATFORM", "wayland")
-hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
-hl.env("GTK_THEME", "Adwaita-dark")
-hl.env("EDITOR", "nvim")
 
