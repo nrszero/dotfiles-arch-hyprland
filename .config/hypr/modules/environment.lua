@@ -1,4 +1,3 @@
-
 -- Check if an Nvidia GPU is present
 local function check_nvidia()
     -- Execute the lspci command and capture the output stream
@@ -9,7 +8,7 @@ local function check_nvidia()
 
         -- If the result string is not empty, an NVIDIA card was found
         return result ~= ""
-    end 
+    end
 end
 
 local is_nvidia = check_nvidia()
