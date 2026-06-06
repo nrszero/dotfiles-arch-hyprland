@@ -17,9 +17,10 @@ Managed with GNU Stow.
 ## 📦 Installation
 
 ### Prerequisites
-- Arch Linux or Arch-based distribution
-- `stow` for symlink management
-- `yay` AUR helper installed
+```
+pacman -S --needed --noconfirm stow 
+pacman -S --needed --noconfirm yay
+```
 
 ### Quick Start
 ```
