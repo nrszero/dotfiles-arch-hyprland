@@ -20,7 +20,7 @@ Scope {
         id: sharedNotifList
     }
 
-    function dismissNotification(index) {
+    property var dismissNotification: function(index) {
         if (index >= 0 && index < sharedNotifList.count) {
             activeNotifications.splice(index, 1) // Remove from memory
             sharedNotifList.remove(index)        // Remove from UI
@@ -57,6 +57,55 @@ Scope {
 
     //-----END NOTIFICATIONS-----
     
+    // Persistent user-controlled bar visibility (toggled with SUPER + Tab)
+    property bool persistentBarsVisible: true
+
+    // Temporary "peek" visibility (auto-triggered on workspace changes)
+    property bool temporaryBarVisible: false
+    
+    // Effective visibility used by all Bar instances
+    readonly property bool barsVisible: persistentBarsVisible || temporaryBarVisible
+    
+    // 3-second auto-hide timer for temporary peeks
+    Timer {
+        id: barPeekTimer
+        interval: 3000
+        repeat: false
+        onTriggered: temporaryBarVisible = false
+    }
+
+    // Show bar temporarily for 3 seconds (does nothing if persistent bar is enabled)
+    function peekBarTemporarily() {
+        if (persistentBarsVisible) return
+        temporaryBarVisible = true
+        barPeekTimer.restart()
+    }
+
+    GlobalShortcut {
+        name: "toggleBar"
+        onPressedChanged: {
+            if (pressed) {
+                persistentBarsVisible = !persistentBarsVisible
+                if (persistentBarsVisible) {
+                    temporaryBarVisible = false
+                    barPeekTimer.stop()
+                }
+            }
+        }
+    }
+    
+    // Automatically peek the bar briefly whenever workspace changes
+    // (this covers SUPER+1..6, SUPER+arrows, clicking workspaces, etc.)
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name === "workspace" ||
+            event.name === "createworkspace" || event.name === "destroyworkspace") {
+                peekBarTemporarily()
+            }
+        }
+    }
+
     Variants {
         model: Quickshell.screens
         delegate: Component {
@@ -71,15 +120,12 @@ Scope {
                     theme: appTheme
                 }
 
-                ControlPanel {
-                    screenModel: wrapper.modelData
-                    notifModel: sharedNotifList
-                    theme: appTheme
-                }
-                
                 Bar {
                     screenModel: wrapper.modelData
                     theme: appTheme
+                    notifModel: sharedNotifList
+                    dismissNotification: shellRoot.dismissNotification
+                    barVisible: shellRoot.barsVisible
                 }
             }
         }

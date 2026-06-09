@@ -13,19 +13,21 @@ import Quickshell.Services.SystemTray
 
 PanelWindow {
     id: root
+    screen: screenModel
     required property var screenModel
     required property var theme
+    required property var notifModel
+    required property var dismissNotification   // function(index) from shell
+    required property bool barVisible
 
     WlrLayershell.layer: WlrLayer.Top
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: WlrLayershell.KeyboardFocus.OnDemand 
+    WlrLayershell.exclusiveZone: barVisible ? height : 0
+    exclusionMode: ExclusionMode.Normal
+    WlrLayershell.keyboardFocus: WlrLayershell.KeyboardFocus.OnDemand
 
     mask: Region {
-        // By default, regions combine (Union), so this creates a mask that covers BOTH the workspaces AND the tray.
         regions: [
-            // 1. The Workspace Box
-            Region { item: workspaceGroup },
-            Region { item: trayLoader.item }
+            Region { item: mainLayout }
         ]
     }
 
@@ -33,280 +35,198 @@ PanelWindow {
         if (!Hyprland.monitors || !Hyprland.monitors.values) return null;
         for (let m of Hyprland.monitors.values) {
             if (m.name === root.screenModel.name) {
-                console.log(`[Bar] Matched Monitor: ${m.name} with ID: ${m.id}`);
                 return m;
             }    
         }
-        console.log(`[Bar] WARNING: No matching Hyprland monitor found for ${root.screenModel.name}`);
         return null;
     }
     
-    GlobalShortcut {
-        name: "toggleBar" // This name identifies the action
-        onPressedChanged: {
-            console.log("Focused Monitor: ", Hyprland.focusedMonitor.name + " Screen Model: ", root.screenModel.name)
-
-            if (pressed) {
-                if (Hyprland.focusedMonitor.name === root.screenModel.name) {
-                    root.visible = true
-                    console.log("[Bar] Toggled Visible. Monitor Index:", monitorIndex, "BaseWs:", baseWs)
-                }
-                else {
-                    root.visible = false
-                }
-            }
-        }
-    }
-    
-    // === DYNAMIC WORKSPACES (fully reactive - matches WORKSPACES variable) ===
     property int totalWorkspaces: 6
 
     Component.onCompleted: {
         Hyprland.refreshWorkspaces()
         updateTotalWorkspaces()
-        console.log("[Bar] Initial totalWorkspaces =", totalWorkspaces)
     }
 
     function updateTotalWorkspaces() {
         if (!Hyprland.workspaces || !Hyprland.workspaces.values) {
-            console.log("[Bar] WARNING: No workspaces data yet, using fallback 6")
             totalWorkspaces = 6
             return
         }
-
         let maxId = 0
         for (let ws of Hyprland.workspaces.values) {
-            if (ws && ws.id > 0 && ws.id > maxId) {
-                maxId = ws.id
-            }
+            if (ws && ws.id > 0 && ws.id > maxId) maxId = ws.id
         }
         totalWorkspaces = maxId > 0 ? maxId : 6
-        console.log(`[Bar] Detected ${totalWorkspaces} workspaces`)
     }
     
-    // Add a small delay timer to allow Hyprland to garbage collect old workspaces
     Timer {
         id: reloadTimer
-        interval: 250 // 250ms is usually plenty of time for Hyprland to clean up
+        interval: 250
         repeat: false
         onTriggered: {
             Hyprland.refreshWorkspaces()
             updateTotalWorkspaces()
-            console.log("[Bar] Delayed refresh completed after config reload.")
         }
     }
 
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "workspace" ||
-                event.name === "createworkspace" ||
-                event.name === "destroyworkspace" ||
-                event.name === "focusedmon") {
-                    
-                // For normal navigation, update instantly
+            if (event.name === "workspace" || event.name === "createworkspace" ||
+                event.name === "destroyworkspace" || event.name === "focusedmon") {
                 Hyprland.refreshWorkspaces()
                 updateTotalWorkspaces()
-                console.log("[Bar] Raw event triggered instant refresh:", event.name)
-                
             } else if (event.name === "configreloaded") {
-                // For reloads, trigger the delay
                 reloadTimer.restart()
-                console.log("[Bar] Config reloaded, starting delayed refresh...")
             }
         }
     }
     
     property int monitorIndex: hMonitor ? hMonitor.id : 0
-    // property int baseWs: monitorIndex * 10
     property int baseWs: monitorIndex
 
     anchors {top: true; left: true; right: true; }
     height: 50
-    visible: false
+    visible: barVisible
     color: "transparent"
      
-    HoverHandler {
-        id: panelHover
-        onPointChanged: {
-            if (root.visible) hideTimer.restart()
-        }
-    }
-    
-    Timer {
-        id: hideTimer
-        interval: 5000    
-        running: root.visible
-        repeat: false
-        onTriggered: {
-            if (panelHover.hovered) {
-                console.log("[Bar] Mouse detected, extending timer...")
-                hideTimer.restart()
-            } 
-            else {
-                console.log("[Bar] Timeout reached, hiding panel.")
-                root.visible = false
-            } 
-        }
-    }
-
-    // --- REUSABLE COMPONENT: "Module Background" ---
     component BarModule: Rectangle {
         color: theme.background
         radius: theme.radius
         border.width: theme.borderWidth
         border.color: theme.borderColor
-        height: 36 // Fixed height for all modules
+        height: 36
         Layout.alignment: Qt.AlignVCenter
     }
 
-    // --- MAIN BAR ---
+    BatteryProc { id: battery }
+
     RowLayout {
         id: mainLayout
         anchors.fill: parent
         anchors.margins: 10
         spacing: theme.spacing
-
-        Item { Layout.fillWidth: true }                
         
-        // --- WORKSPACE BORDERED BOX ---
-        BarModule {
-            id: workspaceGroup
-            implicitWidth: workspaceRow.implicitWidth + 20
+        // LEFT SIDE
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignLeft
+            spacing: 8
 
-            Row {
-                id: workspaceRow
-                anchors.centerIn: parent
-                spacing: 6
-                
-                // --- STANDARD WORKSPACES ---
-                Repeater {
-                    model: root.totalWorkspaces
-                    delegate: Rectangle {
-                        width: isActive ? 28 : 22
-                        height: 22
-                        radius: theme.radius
- 
-                        property int wsId: index + 1
-                        // property int wsId: index + 1 + root.baseWs
-                        
-                        property bool isActive: {
-                            if (!Hyprland.focusedWorkspace) return false;
-                            if (Hyprland.focusedWorkspace.id === wsId) {
-                                return true;
-                            }
-                            return false;
-                        }
-                        property bool hasWindows: {
-                            if (!Hyprland.toplevels.values) return false;
-                            let found = false;
-                            
-                            for (let toplevel of Hyprland.toplevels.values) {
-                                if (toplevel.workspace && toplevel.workspace.id === wsId) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            return found;
-                        }		
+            // Time Pill
+            BarModule {
+                implicitWidth: timeText.implicitWidth + 20
 
-                        color: isActive ? theme.accent : (hasWindows ? theme.surface : "transparent")
-                        border.width: isActive || hasWindows ? 0 : 1
-                        border.color: isActive || hasWindows ? "transparent" : Qt.rgba(1,1,1, 0.1)
-                        
-                        Behavior on width { NumberAnimation { duration: 200 } }
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                Text {
+                    id: timeText
+                    anchors.centerIn: parent
+                    text: Qt.formatTime(new Date(), "HH:mm")
+                    color: theme.text
+                    font.family: theme.fontFace
+                    font.pixelSize: theme.fontSizeMd
+                    font.bold: true
+                }
+            }
 
-                        Text {
-                            anchors.centerIn: parent
-                            color: isActive ? theme.text : theme.subText
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
-                            font.bold: isActive
-                            text: index + 1
-                            visible: isActive || hasWindows
-                        }
+            // Now Playing Pill (separate component)
+            NowPlayingPill {
+                theme: root.theme
+            }
+        }
+        
+        Item { Layout.fillWidth: true }
+
+        // CENTER
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.leftMargin: -145
+            spacing: 8
+
+            BarModule {
+                id: workspaceGroup
+                implicitWidth: workspaceRow.implicitWidth + 20
+
+                Row {
+                    id: workspaceRow
+                    anchors.centerIn: parent
+                    spacing: 6
                     
-                        MouseArea {
-                            id: wsMouseArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                console.log(`[Click] Dispatching workspace ${parent.wsId}`);
-                                Hyprland.dispatch("split-workspace " + (index + 1).toString())
+                    Repeater {
+                        model: root.totalWorkspaces
+                        delegate: Rectangle {
+                            width: isActive ? 28 : 22
+                            height: 22
+                            radius: theme.radius
+     
+                            property int wsId: index + 1
+                            property bool isActive: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
+                            property bool hasWindows: {
+                                if (!Hyprland.toplevels.values) return false
+                                for (let t of Hyprland.toplevels.values) {
+                                    if (t.workspace && t.workspace.id === wsId) return true
+                                }
+                                return false
+                            }
+
+                            color: isActive ? theme.accent : (hasWindows ? theme.surface : "transparent")
+                            border.width: (isActive || hasWindows) ? 0 : 1
+                            border.color: Qt.rgba(1,1,1, 0.1)
+                            
+                            Behavior on width { NumberAnimation { duration: 200 } }
+                            Behavior on color { ColorAnimation { duration: 200 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                color: isActive ? theme.text : theme.subText
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                font.bold: isActive
+                                text: index + 1
+                                visible: isActive || hasWindows
+                            }
+                        
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: Hyprland.dispatch(`hl.dsp.focus({workspace = ${index + 1}})`)
                             }
                         }
                     }
                 }
             }
-        }
-        
-        Loader {
-            id: trayLoader
-            active: root.visible
-            Layout.alignment: Qt.AlignCenter
-
-            sourceComponent: BarModule {
-                id: systemTrayGroup
-                visible: trayRepeater.count > 0
-                implicitWidth: systemTrayRow.implicitWidth + 20
-
-                // This is the container for your tray icons
-                Row {
-                    id: systemTrayRow
-                    anchors.centerIn: parent
-                    spacing: 8 // Space between icons
-                    
-                    // The Repeater creates an item for every app in the tray
-                    Repeater {
-                        // SystemTray.items is the list of active tray apps
-                        id: trayRepeater
-                        model: SystemTray.items
-
-                        delegate: Rectangle {
-                            width: 22
-                            height: 22
-                            color: "transparent" // Background color
-                            radius: theme.radius
-                            
-                            QsMenuAnchor {
-                                id: menuAnchor
-                                anchor.item: sysTrayIcon
-                            }
-
-                            // The icon image:
-                            Image {
-                                id: sysTrayIcon
-                                visible: modelData.icon !== ""
-                                anchors.centerIn: parent
-                                width: 18
-                                height: 18
-                                source: modelData.icon
-                                fillMode: Image.PreserveAspectFit
-                            }
-                            
-                            Component.onCompleted: {
-                                console.log("System Tray Icon: ", modelData.icon)
-                            }
-
-                            // Handle mouse clicks
-                            MouseArea {
-                                anchors.fill: parent
-                                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                cursorShape: Qt.PointingHandCursor
-                                
-                                onClicked: (mouse) => {
-                                    if (mouse.button === Qt.LeftButton) {
-                                        modelData.activate() // Left click activates the app window
-                                    } else if (mouse.button === Qt.RightButton) {
-                                        if (modelData.hasMenu) {
-                                            menuAnchor.menu = modelData.menu
-                                            menuAnchor.open() // Ask Quickshell to render the popup
-                                        } else {
-                                            // Fallback for apps that use right-click for "secondary activation" instead of a menu
-                                            modelData.secondaryActivate()
-                                        }    
+            
+            Loader {
+                id: trayLoader
+                active: root.visible
+                sourceComponent: BarModule {
+                    visible: trayRepeater.count > 0
+                    implicitWidth: systemTrayRow.implicitWidth + 20
+                    Row {
+                        id: systemTrayRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Repeater {
+                            id: trayRepeater
+                            model: SystemTray.items
+                            delegate: Rectangle {
+                                width: 22; height: 22; color: "transparent"; radius: theme.radius
+                                QsMenuAnchor { id: menuAnchor; anchor.item: sysTrayIcon }
+                                Image {
+                                    id: sysTrayIcon
+                                    visible: modelData.icon !== ""
+                                    anchors.centerIn: parent; width: 18; height: 18
+                                    source: modelData.icon; fillMode: Image.PreserveAspectFit
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: (mouse) => {
+                                        if (mouse.button === Qt.LeftButton) modelData.activate()
+                                        else if (modelData.hasMenu) { menuAnchor.menu = modelData.menu; menuAnchor.open() }
+                                        else modelData.secondaryActivate()
                                     }
                                 }
                             }
@@ -314,11 +234,226 @@ PanelWindow {
                     }
                 }
             }
+
+        }
+        
+        Item { Layout.fillWidth: true }
+
+        // RIGHT SIDE
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignRight
+            spacing: 8
+            
+            BarModule {
+                implicitWidth: statusRow.implicitWidth + 16
+                
+                RowLayout {
+                    id: statusRow
+                    anchors.centerIn: parent
+                    spacing: 8
+                    
+                    // Battery
+                    RowLayout {
+                        visible: battery.battPresent
+                        spacing: 3
+                        Text {
+                            text: {
+                                if (battery.battCharging) return "󰂄";
+                                if (battery.battLevel > 0.9) return "󰁹";
+                                if (battery.battLevel > 0.8) return "󰂂";
+                                if (battery.battLevel > 0.7) return "󰂁";
+                                if (battery.battLevel > 0.6) return "󰂀";
+                                if (battery.battLevel > 0.5) return "󰁿";
+                                if (battery.battLevel > 0.4) return "󰁾";
+                                if (battery.battLevel > 0.3) return "󰁽";
+                                if (battery.battLevel > 0.2) return "󰁼";
+                                return "󰁺";
+                            }
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeLg
+                            color: theme.text
+                        }
+                        Text {
+                            text: Math.round(battery.battLevel * 100) + "%"
+                            color: theme.subText
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
+                        }
+                    }
+                    
+                    // Volume Icon
+                    Text {
+                        id: volumeIcon
+                        text: (Pipewire.defaultAudioSink?.audio.muted) ? "" : ""
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: theme.text
+
+                        HoverHandler { id: volumeIconHover }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkPopup.visible = false
+                                bluetoothPopup.visible = false
+                                notifCenter.visible = false
+                                powerButtonPopup.visible = false
+                                volumePopup.visible = !volumePopup.visible
+                            }
+                        }
+                    }
+
+                    // Network
+                    Text {
+                        id: networkIcon
+                        text: "󰈀"
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: theme.accent
+
+                        HoverHandler { id: networkIconHover }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                bluetoothPopup.visible = false
+                                notifCenter.visible = false
+                                volumePopup.visible = false
+                                powerButtonPopup.visible = false
+                                networkPopup.visible = !networkPopup.visible
+                            }
+                        }
+                    }
+
+                    // Bluetooth
+                    Text {
+                        id: bluetoothIcon
+                        text: "󰂯"
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: Bluetooth.devices.values.some(d => d.connected) ? theme.accent : theme.subText
+                        
+                        HoverHandler { id: bluetoothIconHover }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkPopup.visible = false
+                                notifCenter.visible = false
+                                powerButtonPopup.visible = false
+                                volumePopup.visible = false
+                                bluetoothPopup.visible = !bluetoothPopup.visible
+                            }
+                        }
+                    }
+
+                    // Notifications Bell + Badge
+                    Item {
+                        id: notifBellContainer
+                        width: 26; height: 26
+                        
+                        HoverHandler { id: notifIconHover }
+
+                        Text {
+                            id: notifBellIcon
+                            anchors.centerIn: parent
+                            text: "󰂚"
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeXl
+                            color: theme.text
+                        }
+
+                        Rectangle {
+                            visible: notifModel && notifModel.count > 0
+                            anchors.top: parent.top; anchors.right: parent.right
+                            width: 15; height: 15; radius: 7.5
+                            color: theme.urgent
+                            Text {
+                                anchors.centerIn: parent
+                                text: notifModel ? notifModel.count : ""
+                                color: theme.text
+                                font.family: theme.fontFace
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkPopup.visible = false
+                                bluetoothPopup.visible = false
+                                volumePopup.visible = false
+                                powerButtonPopup.visible = false
+                                notifCenter.visible = !notifCenter.visible
+                            }
+                        }
+                    }
+
+                    // Power
+                    Text {
+                        id: powerIcon
+                        text: "󰐥"
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: theme.text
+                        HoverHandler { id: powerIconHover }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkPopup.visible = false
+                                bluetoothPopup.visible = false
+                                notifCenter.visible = false
+                                volumePopup.visible = false
+                                powerButtonPopup.visible = !powerButtonPopup.visible
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        Item { Layout.fillWidth: true }
+    }
+
+    // === DROPDOWNS ===
+
+    NetworkPopup {
+        id: networkPopup
+        anchor.item: networkIcon
+        theme: root.theme
+    }
+
+    BluetoothPopup {
+        id: bluetoothPopup
+        anchor.item: bluetoothIcon
+        theme: root.theme
+    }
+    
+    VolumePopup {
+        id: volumePopup
+        anchor.item: volumeIcon
+        theme: root.theme
+    }
+    
+    PowerButtonPopup {
+        id: powerButtonPopup
+        anchor.item: powerIcon
+        theme: root.theme
+    }
+  
+    NotificationCenter {
+        id: notifCenter
+        anchor.item: notifBellIcon
+        notifModel: root.notifModel
+        theme: root.theme
+        dismissNotification: root.dismissNotification
     }
 }
-     
-
-

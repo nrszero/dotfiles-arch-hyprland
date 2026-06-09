@@ -54,11 +54,7 @@ hl.bind(MAIN_MOD .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(MAIN_MOD .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Global Keybind for quickshell
-for i = 0, WORKSPACES do
-    hl.bind(MAIN_MOD .. " + " .. i, hl.dsp.global("quickshell:toggleBar"))
-end
-hl.bind(MAIN_MOD .. " + S", hl.dsp.global("quickshell:toggleBar"))
-hl.bind(MAIN_MOD .. " + Tab", hl.dsp.global("quickshell:togglePanel"))
+hl.bind(MAIN_MOD .. " + Tab", hl.dsp.global("quickshell:toggleBar"))
 
 -- Disable DP-1 for Moonlight remote sessions
 hl.bind(MAIN_MOD .. " + U", hl.dsp.exec_cmd("hyprctl keyword monitor DP-1"))
