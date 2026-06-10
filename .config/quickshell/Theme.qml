@@ -20,7 +20,7 @@ Item {
     property int radius: 12        // A bit sharper looks more "tech" than 15
     property int spacing: 10
     property int padding: 12
-    property int borderWidth: 1
+    property int borderWidth: 2
 
     // --- FONTS ---
     property string fontFace: "JetBrainsMono Nerd Font"
