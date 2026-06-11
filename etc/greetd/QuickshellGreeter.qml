@@ -5,12 +5,10 @@ import Quickshell
 import Quickshell.Services.Greetd
 import Quickshell.Wayland
 import Quickshell.Io
+import QtQuick.Effects
 
 ShellRoot {
-    // ---------------------------------------------------------
-    // THEME INTEGRATION
-    // Replace these with your existing theme properties/imports
-    // ---------------------------------------------------------
+    
     QtObject {
         id: theme
         property color surface: "#33000000"
@@ -21,7 +19,7 @@ ShellRoot {
 
         property int fontSize: 16
         property int radius: 15
-        property int borderWidth: 1
+        property int borderWidth: 2
     }
 
     FileView {
@@ -30,7 +28,7 @@ ShellRoot {
         // Point directly to the globally readable mirror
         path: "/var/tmp/greeter-colors.json"
         
-        watchChanges: true 
+        watchChanges: false 
         onFileChanged: reload() 
 
         onLoaded: {
@@ -138,7 +136,39 @@ ShellRoot {
 	    WlrLayershell.layer: WlrLayer.Overlay
 
         color: "transparent"
-	
+
+        Item {
+            anchors.fill: parent
+            clip: true                    // This usually kills the white border
+
+            Image {
+                id: wallpaper
+                anchors.fill: parent
+                anchors.margins: -30
+                source: "file:///var/tmp/greeter-wallpaper"
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                smooth: true
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 42
+                    blur: 0.6
+                    brightness: -0.12
+                    saturation: 0.88
+                }
+            }
+        }
+
+        // Light dark overlay (keep this)
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.18
+        }
+
 	    Timer {
             interval: 100
             running: true

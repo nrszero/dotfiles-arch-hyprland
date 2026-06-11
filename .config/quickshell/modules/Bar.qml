@@ -127,6 +127,14 @@ PanelWindow {
                     font.pixelSize: theme.fontSizeMd
                     font.bold: true
                 }
+
+                // Update the clock every second so minutes change on time
+                Timer {
+                    interval: 1000
+                    running: true
+                    repeat: true
+                    onTriggered: timeText.text = Qt.formatTime(new Date(), "HH:mm")
+                }
             }
 
             // Now Playing Pill (separate component)

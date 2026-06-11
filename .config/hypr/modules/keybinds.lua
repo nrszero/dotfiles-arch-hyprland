@@ -1,6 +1,7 @@
 -- General
 hl.bind(MAIN_MOD .. " + C", hl.dsp.window.close())
-hl.bind(MAIN_MOD .. " + M", hl.dsp.exit())
+hl.bind(MAIN_MOD .. " + M", hl.dsp.exec_cmd("~/.config/quickshell/lock/lock.sh"))
+hl.bind(MAIN_MOD .. " + SHIFT + M", hl.dsp.exit())
 hl.bind(MAIN_MOD .. " + V", hl.dsp.window.float())
 hl.bind(MAIN_MOD .. " + P", hl.dsp.window.pseudo())
 hl.bind(MAIN_MOD .. " + O", hl.dsp.layout("togglesplit"))

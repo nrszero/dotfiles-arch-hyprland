@@ -38,34 +38,51 @@ config_system() {
     fi
 }
 
+copy_etc() {
+    if [ ! -d "$DOTFILES/etc" ]; then
+        log "No etc/ directory found in dotfiles. Skipping system config copy."
+        return
+    fi
+
+    log "Copying system configuration from dotfiles/etc/ to /etc/..."
+    
+    # Copy files while forcing root ownership
+    sudo rsync -a --backup --suffix=.bak \
+        --exclude='.git' \
+        --exclude='.stow-local-ignore' \
+        --chown=root:root \
+        "$DOTFILES/etc/" /etc/
+
+    # Enforce correct permissions after copy
+    sudo find /etc/greetd /etc/pam.d /etc/awww -type f ! -name "*.sh" -exec chmod 644 {} + 2>/dev/null || true
+    sudo find /etc/greetd /etc/pam.d /etc/awww -type f -name "*.sh" -exec chmod 755 {} + 2>/dev/null || true
+    sudo find /etc/greetd /etc/pam.d /etc/awww -type d -exec chmod 755 {} + 2>/dev/null || true
+
+    log "System configuration copied with correct root ownership and permissions."
+}
+
 stow_user() {
     log "Stowing user configs (.config/)..."
     stow -v --target ~/.config --restow --adopt .config
 }
- 
-stow_system() {
-    log "Stowing system files (etc/)..."
-    if [ -d "$DOTFILES/etc" ]; then
-        chmod o+rx "$HOME"
-        chmod -R 755 "$DOTFILES/etc"
-        chmod -R 755 "$DOTFILES/wallpapers"
-        chmod o+rx "$DOTFILES"
 
-        sudo stow -D etc 2>/dev/null || true
-        sudo stow -v --target /etc --restow --adopt etc
-        
+stow_wallpapers() {
+    log "Stowing wallpapers to /usr/share/wallpapers..."
+    if [ -d "$DOTFILES/wallpapers" ]; then
         sudo mkdir -p /usr/share/wallpapers
         sudo stow -D wallpapers 2>/dev/null || true
         sudo stow -v --target /usr/share/wallpapers --restow --adopt wallpapers
-        
-      fi
+    fi
 }
 
 main() {
       install_packages
+      copy_etc
       stow_user
-      stow_system
-      log "Dotfiles installed! Reboot or run hyprctl reload"
+      stow_wallpapers
+
+      log "Dotfiles installed!"
+      log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
 }
 
 main "$@"
