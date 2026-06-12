@@ -1,3 +1,7 @@
+
+LEFT_MONITOR = "HDMI-A-1"
+RIGHT_MONITOR = "DP-1"
+
 hl.env("QT_QPA_PLATFORM", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("XDG_SESSION_TYPE", "wayland")
@@ -5,8 +9,30 @@ hl.env("XDG_SESSION_TYPE", "wayland")
 hl.on("hyprland.start", function()
     hl.exec_cmd("awww-daemon")
     hl.exec_cmd("/etc/awww/awww_randomize.sh")
+    -- hl.exec_cmd("WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p /etc/greetd/QuickshellGreeter.qml >> /var/tmp/quickshell-deep-debug.log 2>&1; hyprctl dispatch exit")
     hl.exec_cmd("quickshell -p /etc/greetd/QuickshellGreeter.qml > /var/tmp/quickshell-greeter.log 2>&1; hyprctl dispatch exit")
 end)
+
+hl.monitor({
+    output   = LEFT_MONITOR,
+    mode     = "highrr",
+    position = "0x0",
+    scale    = 1,
+    bitdepth = 10,
+})
+
+hl.monitor({
+    output   = RIGHT_MONITOR,
+    disabled = true,
+})
+
+-- Fallback for any other random monitors you plug in
+hl.monitor({
+    output   = "",
+    mode     = "preferred",
+    position = "auto",
+    scale    = 1,
+})
 
 hl.config({
     decoration = {
