@@ -9,7 +9,8 @@ import QtQuick.Effects
 import QtQml
 
 ShellRoot {
-    
+    id: root
+
     QtObject {
         id: theme
         property color surface: "#33000000"
@@ -66,18 +67,17 @@ ShellRoot {
             id: mainWin
             screen: modelData
             
+            property bool isMain: modelData.name === "HDMI-A-1"
+            
             anchors.top: true
             anchors.bottom: true
             anchors.left: true
             anchors.right: true
 
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.keyboardFocus: isMain ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             WlrLayershell.layer: WlrLayer.Overlay
-
-            color: "transparent"
+            color: "black"
             
-            // The command to launch upon success (e.g., Hyprland, sway, bash)
-            // You can make this a dropdown if you have multiple sessions.
             property var sessionCommand: ["start-hyprland"] 
 
             function attemptLogin() {
@@ -139,156 +139,168 @@ ShellRoot {
                 ]
             }
 
+            // Master
             Item {
                 anchors.fill: parent
-                clip: true                    // This usually kills the white border
+                visible: isMain
 
-                Image {
-                    id: wallpaper
+                // Wallpaper
+                Item {
                     anchors.fill: parent
-                    anchors.margins: -30
-                    source: "file:///var/tmp/greeter-wallpaper"
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: false
-                    smooth: true
+                    clip: true                    // This usually kills the white border
 
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        blurEnabled: true
-                        blurMax: 42
-                        blur: 0.6
-                        brightness: -0.12
-                        saturation: 0.88
+                    Image {
+                        id: wallpaper
+                        anchors.fill: parent
+                        anchors.margins: -30
+                        source: "file:///var/tmp/greeter-wallpaper"
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: false
+                        smooth: true
+
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            blurEnabled: true
+                            blurMax: 42
+                            blur: 0.6
+                            brightness: -0.12
+                            saturation: 0.88
+                        }
                     }
                 }
-            }
 
-            // Light dark overlay (keep this)
-            Rectangle {
-                anchors.fill: parent
-                color: "#000000"
-                opacity: 0.18
-            }
+                // Light dark overlay (keep this)
+                Rectangle {
+                    anchors.fill: parent
+                    color: "#000000"
+                    opacity: 0.18
+                }
 
-            Timer {
-                interval: 100
-                running: true
-                repeat: false
-                onTriggered: inputField.forceActiveFocus()
-            }
+                // Auto-focus input when the surface appears
+                Timer {
+                    interval: 100
+                    running: true
+                    repeat: false
+                    onTriggered: {
+                        if (isMain) inputField.forceActiveFocus()
+                    }
+                }
+                
+                // CENTERED LOCK CARD
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
 
-            Rectangle {
-                anchors.fill: parent
-                color: "transparent"
-
-                Rectangle {   
-                    width: 400
-                    height: 300
-                    anchors.centerIn: parent
-
-                    color: theme.surface
-                    border.width: theme.borderWidth
-                    border.color: theme.borderColor
-                    radius: theme.radius
-
-                    ColumnLayout {
+                    Rectangle {   
+                        width: 400
+                        height: 300
                         anchors.centerIn: parent
-                        spacing: 20
-                        width: parent.width * 0.8
 
-                        Text {
-                            text: "Welcome"
-                            font.pixelSize: 24
-                            font.bold: true
-                            color: theme.text
-                            Layout.alignment: Qt.AlignHCenter
-                        }
+                        color: theme.surface
+                        border.width: theme.borderWidth
+                        border.color: theme.borderColor
+                        radius: theme.radius
 
-                        // Status/Prompt Text
-                        Text {
-                            id: statusText
-                            text: "Enter Username"
-                            color: theme.text
-                            font.pixelSize: theme.fontSize
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.WordWrap
-                        }
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 20
+                            width: parent.width * 0.8
 
-                        // Input Field
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 45
-                            color: Qt.darker(theme.surface, 1.2)
-                            radius: theme.radius
-                            border.color: inputField.activeFocus ? theme.accent : "transparent"
-                            border.width: 2
+                            Text {
+                                text: "Welcome"
+                                font.pixelSize: 24
+                                font.bold: true
+                                color: theme.text
+                                Layout.alignment: Qt.AlignHCenter
+                            }
 
-                            TextInput {
-                                id: inputField
-                                anchors.fill: parent
-                                anchors.margins: 15
-                                verticalAlignment: TextInput.AlignVCenter
+                            // Status/Prompt Text
+                            Text {
+                                id: statusText
+                                text: "Enter Username"
                                 color: theme.text
                                 font.pixelSize: theme.fontSize
-                                selectByMouse: true
-                            
-                                // Default to username input
-                                echoMode: TextInput.Normal 
-                                Keys.onReturnPressed: attemptLogin()
-                    
-                                MouseArea {
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.fillWidth: true
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                            }
+
+                            // Input Field
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 45
+                                color: Qt.darker(theme.surface, 1.2)
+                                radius: theme.radius
+                                border.color: inputField.activeFocus ? theme.accent : "transparent"
+                                border.width: 2
+
+                                TextInput {
+                                    id: inputField
                                     anchors.fill: parent
-                                    cursorShape: Qt.IBeamCursor
-                                    onPressed: (mouse) => {
-                                        inputField.forceActiveFocus()
-                                        // Pass the click through to the text input so cursor positioning works
-                                        mouse.accepted = false 
+                                    anchors.margins: 15
+                                    verticalAlignment: TextInput.AlignVCenter
+                                    color: theme.text
+                                    font.pixelSize: theme.fontSize
+                                    selectByMouse: true
+                                    focus: isMain
+                                
+                                    // Default to username input
+                                    echoMode: TextInput.Normal 
+                                    Keys.onReturnPressed: attemptLogin()
+                        
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.IBeamCursor
+                                        onPressed: (mouse) => {
+                                            inputField.forceActiveFocus()
+                                            // Pass the click through to the text input so cursor positioning works
+                                            mouse.accepted = false 
+                                        }
                                     }
                                 }
                             }
-                        }
+                            
+                            Button {
+                                text: loginState.state === "username" ? "Next" : "Login"
+                                Layout.alignment: Qt.AlignHCenter
+                                Layout.preferredWidth: 120
+                                Layout.preferredHeight: 40
+                                    
+                                background: Rectangle {
+                                    color: parent.hovered || parent.down ? theme.accent : theme.surface
+                                    radius: theme.radius
+                                }
 
-                        Button {
-                            text: loginState.state === "username" ? "Next" : "Login"
-                            Layout.alignment: Qt.AlignHCenter
-                            Layout.preferredWidth: 120
-                            Layout.preferredHeight: 40
-                                
-                            background: Rectangle {
-                                color: parent.hovered || parent.down ? theme.accent : theme.surface
-                                radius: theme.radius
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: theme.text
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.bold: true
+                                    font.pixelSize: 16
+                                }    
+                                onClicked: attemptLogin()
                             }
-
-                            contentItem: Text {
-                                text: parent.text
-                                color: theme.text
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                                font.bold: true
-                                font.pixelSize: 16
-                            }    
-                            onClicked: attemptLogin()
                         }
                     }
                 }
-            }
-            
-            // Optional: Clock or other widgets from your setup can go here
-            Text {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.margins: 30
-                text: Qt.formatDateTime(new Date(), "hh:mm")
-                font.pixelSize: 64
-                color: theme.text
-                opacity: 0.8
+                
+                // Clock
+                Text {
+                    anchors.bottom: parent.bottom
+                    anchors.right: parent.right
+                    anchors.margins: 30
+                    text: Qt.formatDateTime(new Date(), "hh:mm")
+                    font.pixelSize: 64
+                    color: theme.text
+                    opacity: 0.8
 
-                Timer {
-                    interval: 1000; running: true; repeat: true
-                    onTriggered: parent.text = Qt.formatTime(new Date(), "hh:mm")
+                    Timer {
+                        interval: 1000; running: true; repeat: true
+                        onTriggered: parent.text = Qt.formatTime(new Date(), "hh:mm")
+                    }
                 }
             }
         }

@@ -23,7 +23,11 @@ hl.monitor({
 
 hl.monitor({
     output   = RIGHT_MONITOR,
-    disabled = true,
+    mode     = "highrr",
+    position = "2560x0",
+    scale    = 1,
+    bitdepth = 10,
+    disabled = false,
 })
 
 -- Fallback for any other random monitors you plug in
