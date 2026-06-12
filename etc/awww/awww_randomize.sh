@@ -34,9 +34,7 @@ if [ "$CURRENT_USER" = "greeter" ]; then
     echo "--- Restoring persistent wallpaper for greeter ---" >> "$LOG_FILE"
     if [ -f "/var/tmp/greeter-wallpaper" ]; then
         awww clear 000000 >> "$LOG_FILE" 2>&1
-        MAIN_MONITOR=$(hyprctl monitors | awk '/Monitor/{print $2}' | head -n 1)
-        echo "[$(date '+%H:%M:%S')] [PID: $$] Targeting main monitor: $MAIN_MONITOR" >> "$LOG_FILE"
-        AWWW_OUTPUT=$(awww img --outputs "$MAIN_MONITOR" --resize="crop" "/var/tmp/greeter-wallpaper" </dev/null 2>&1)
+        AWWW_OUTPUT=$(awww img --resize="crop" "/var/tmp/greeter-wallpaper" </dev/null 2>&1)
         
         if [ -z "$AWWW_OUTPUT" ]; then
             echo "[$(date '+%H:%M:%S')] [PID: $$] awww daemon response: (Command executed silently/successfully)" >> "$LOG_FILE"
