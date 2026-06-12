@@ -10,9 +10,7 @@ import QtQml
 Item {
     id: root
     required property var context
-    required property string screenName
-
-    property bool isMain: screenName === "HDMI-A-1"
+    required property bool isMain
 
     QtObject {
         id: theme

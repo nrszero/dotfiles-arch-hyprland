@@ -67,7 +67,7 @@ ShellRoot {
             id: mainWin
             screen: modelData
             
-            property bool isMain: modelData.name === "HDMI-A-1"
+            property bool isMain: modelData.x === 0
             
             anchors.top: true
             anchors.bottom: true
