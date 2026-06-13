@@ -5,12 +5,37 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
+import Quickshell.Hyprland
 import QtQml
 
 Item {
     id: root
     required property var context
-    required property bool isMain
+    required property var targetScreen 
+
+    // Strict: True ONLY when Wayland confirms this is definitely the main screen
+    property bool isMain: !!(targetScreen && targetScreen.x === 0)
+
+    onIsMainChanged: {
+        // Use the native Hyprland module to dispatch the command
+        if (isMain && targetScreen && targetScreen.name) {
+            console.log("[LockScreen] Screen recognized, starting 250ms warp delay...")
+            warpTimer.restart()
+        }
+    }
+
+    // Delayed timer to let hardware interrupts and DPMS settle before warping the mouse
+    Timer {
+        id: warpTimer
+        interval: 250 // 250 milliseconds
+        repeat: false
+        onTriggered: {
+            if (isMain && targetScreen && targetScreen.name) {
+                console.log("[LockScreen] Delayed warp firing for monitor:", targetScreen.name)
+                Hyprland.dispatch(`hl.dsp.focus({ monitor = "${targetScreen.name}" })`)
+            }
+        }
+    }
 
     QtObject {
         id: theme
@@ -63,7 +88,9 @@ Item {
         target: context
         function onShowFailureChanged() {
             if (context.showFailure && isMain) {
+                console.log("[LockScreen] showFailure → clearing input and refocusing on", targetScreen ? targetScreen.name : "unknown")
                 inputField.text = ""
+                context.currentText = ""
                 inputField.forceActiveFocus()
             }
         }
@@ -76,20 +103,30 @@ Item {
 
     // Master
     Item {
+        id: content
         anchors.fill: parent
         visible: isMain
 
+        onVisibleChanged: {
+            if (!visible) {
+                console.log("[LockScreen] Monitors sleeping -> Dropping focus and clearing input.")
+                content.forceActiveFocus()
+                inputField.text = ""   
+                context.currentText = ""
+            }
+        }
+      
         // Wallpaper        
         Item {
             anchors.fill: parent
             clip: true                    // This usually kills the white border
-
+        
             // Wallpaper
             Image {
                 id: wallpaper
                 anchors.fill: parent
                 anchors.margins: -30
-                source: "file:///var/tmp/greeter-wallpaper"
+                source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: false
@@ -115,11 +152,14 @@ Item {
         
         // Auto-focus input when the surface appears
         Timer {
-            interval: 80
-            running: true
-            repeat: false
+            interval: 500
+            running: isMain && content.visible && !inputField.activeFocus
+            repeat: true
             onTriggered: {
-                if (isMain) inputField.forceActiveFocus()
+                console.log("[LockScreen] Auto-focus Timer fired for", targetScreen ? targetScreen.name : "unknown")
+                if (content.visible) {
+                    inputField.forceActiveFocus()
+                }
             }
         }
         
@@ -127,6 +167,8 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "transparent"
+            opacity: isMain ? 1.0 : 0.0
+            enabled: true
 
             Rectangle {
                 width: 400
@@ -182,12 +224,10 @@ Item {
                             selectByMouse: true
                             echoMode: TextInput.Password
                             inputMethodHints: Qt.ImhSensitiveData
-                            focus: isMain
-
-                            // Sync with context
-                            onTextChanged: context.currentText = text
-
-                            // Submit on Enter
+                            focus: true
+                            
+                            text: context.currentText
+                            onTextEdited: context.currentText = text
                             Keys.onReturnPressed: context.tryUnlock()
 
                             MouseArea {
@@ -204,14 +244,14 @@ Item {
                     Button {
                         text: "Unlock"
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 130
+                        Layout.preferredWidth: 120
                         Layout.preferredHeight: 40
                         enabled: !context.unlockInProgress && inputField.text.length > 0
 
                         background: Rectangle {
                             color: parent.hovered || parent.down ? theme.accent : theme.surface
                             radius: theme.radius
-                            border.width: 1
+                            border.width: 2
                             border.color: theme.borderColor
                         }
 

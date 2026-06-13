@@ -63,7 +63,7 @@ ShellRoot {
                 anchors.fill: parent
                 context: lockContext
                 // Pass the hardware name down to the visual component
-                isMain: lockSurface.screen.x === 0
+                targetScreen: lockSurface.screen
             }
         }
     }

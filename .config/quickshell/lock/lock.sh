@@ -30,9 +30,11 @@ if [ ! -f "$LOCK_QML" ]; then
     log "ERROR: Lock screen QML not found!"
     exit 1
 fi
-
-log "Killing any existing lock screen instances..."
-pkill -f "quickshell.*lock/shell.qml" 2>/dev/null || log "No existing instances found."
+log "Checking for existing lock screen instances..."
+if pgrep -f "quickshell.*lock/shell.qml" > /dev/null; then
+    log "Lock screen is already running. Ignoring duplicate request."
+    exit 0
+fi
 
 log "Changing directory to $CONFIG_DIR"
 cd "$CONFIG_DIR" || {
@@ -45,7 +47,8 @@ log "Launching quickshell..."
 log "Command: quickshell -p lock/shell.qml"
 
 # Run quickshell and capture everything
-quickshell -p lock/shell.qml >> "$LOG_FILE" 2>&1
+quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1
+# WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 log "Quickshell exited with code: $EXIT_CODE"

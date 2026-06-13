@@ -271,6 +271,8 @@ ShellRoot {
                                 background: Rectangle {
                                     color: parent.hovered || parent.down ? theme.accent : theme.surface
                                     radius: theme.radius
+                                    border.width: 2
+                                    border.color: theme.borderColor
                                 }
 
                                 contentItem: Text {
