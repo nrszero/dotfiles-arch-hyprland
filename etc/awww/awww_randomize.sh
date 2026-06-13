@@ -48,6 +48,22 @@ if [ "$CURRENT_USER" = "greeter" ]; then
 fi
 # ----------------------------
 
+# --- 3. OUTPUT STABILIZATION BUFFER ---
+echo "[$(date '+%H:%M:%S')] [PID: $$] Dynamically polling for monitor initialization..." >> "$LOG_FILE"
+
+# Ask the kernel how many displays are physically connected to the GPU
+PHYSICAL_MONITORS=$(cat /sys/class/drm/card*-*/status 2>/dev/null | grep -c "^connected" || echo 1)
+
+echo "[$(date '+%H:%M:%S')] [PID: $$] Hardware reports $PHYSICAL_MONITORS connected monitor(s)." >> "$LOG_FILE"
+
+# Wait until Hyprland registers that exact number
+while [ "$(hyprctl monitors all | grep -c 'Monitor')" -lt "$PHYSICAL_MONITORS" ]; do
+    sleep 0.2
+done
+
+echo "[$(date '+%H:%M:%S')] [PID: $$] Hyprland monitor handshake complete." >> "$LOG_FILE"
+# --------------------------------------
+
 if [ $# -lt 1 ] || [ ! -d "$1" ]; then
 	printf "Usage:\n\t\e[1m%s\e[0m \e[4mDIRECTORY\e[0m [\e[4mINTERVAL\e[0m]\n" "$0"
 	printf "\tChanges the wallpaper to a randomly chosen image in DIRECTORY every\n\tINTERVAL seconds."
