@@ -5,11 +5,44 @@ DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() { printf '==> %s\n' "$*"; }
 
-install_packages() {
-    if [[ "${SKIP_PACKAGES:-0}" == "1" ]]; then return; fi
-    log "Installing packages from packages.txt..."
+prompt_menu() {
+    if [[ "${SKIP_PACKAGES:-0}" == "1" ]]; then
+        return
+    fi
 
-    yay -S --needed --noconfirm - < "$DOTFILES/packages.txt"
+    echo ""
+    log "Please select a package installation option:"
+    echo "  1) Install required packages"
+    echo "  2) Install full packages"
+    echo "  3) Install no packages"
+    echo ""
+    read -r -p "Enter choice [1-3]: " choice
+
+    case $choice in
+        1)
+            PKG_FILE="$DOTFILES/required_packages.txt"
+            ;;
+        2)
+            PKG_FILE="$DOTFILES/full_packages.txt"
+            ;;
+        3)
+            PKG_FILE="none"
+            ;;
+        *)
+            log "Invalid option. Exiting."
+            exit 1
+            ;;
+    esac
+}
+
+install_packages() {
+    if [[ "${SKIP_PACKAGES:-0}" == "1" ]] || [[ "$PKG_FILE" == "none" ]]; then
+        log "Skipping package installation."
+        return
+    fi
+    
+    log "Installing packages from $(basename "$PKG_FILE")..."
+    yay -S --needed --noconfirm - < "$PKG_FILE"
 
     config_system
 }
@@ -21,8 +54,8 @@ config_system() {
         log "-> Enabling Wayland sleep services..."
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
 
-        log "-> Installing packages from packages_nvidia.txt"
-        yay -S --needed --noconfirm - < "$DOTFILES/packages_nvidia.txt"
+        log "-> Installing packages from nvidia_packages.txt"
+        yay -S --needed --noconfirm - < "$DOTFILES/nvidia_packages.txt"
         
         # Append kernel parameter if not already present
         if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/default/grub; then
@@ -76,13 +109,14 @@ stow_wallpapers() {
 }
 
 main() {
-      install_packages
-      copy_etc
-      stow_user
-      stow_wallpapers
+    prompt_menu
+    install_packages
+    copy_etc
+    stow_user
+    stow_wallpapers
 
-      log "Dotfiles installed!"
-      log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
+    log "Dotfiles installed!"
+    log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
 }
 
 main "$@"
