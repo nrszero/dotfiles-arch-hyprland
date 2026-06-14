@@ -15,7 +15,7 @@ Item {
 
     // Strict: True ONLY when Wayland confirms this is definitely the main screen
     property bool isMain: !!(targetScreen && targetScreen.x === 0)
-
+    
     onIsMainChanged: {
         // Use the native Hyprland module to dispatch the command
         if (isMain && targetScreen && targetScreen.name) {
@@ -107,14 +107,14 @@ Item {
         anchors.fill: parent
         visible: isMain
 
-        onVisibleChanged: {
-            if (!visible) {
-                console.log("[LockScreen] Monitors sleeping -> Dropping focus and clearing input.")
-                content.forceActiveFocus()
-                inputField.text = ""   
-                context.currentText = ""
-            }
-        }
+        //onVisibleChanged: {
+        //    if (!visible) {
+        //        console.log("[LockScreen] Monitors sleeping -> Dropping focus and clearing input.")
+        //        content.forceActiveFocus()
+        //        inputField.text = ""   
+        //        context.currentText = ""
+        //    }
+        //}
       
         // Wallpaper        
         Item {

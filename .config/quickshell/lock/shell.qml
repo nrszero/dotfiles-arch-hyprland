@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.Pam
+import Quickshell.Io
 
 import "." as Lock
 
@@ -58,12 +59,55 @@ ShellRoot {
 
         WlSessionLockSurface {
             id: lockSurface
+            
+            property bool isArmed: true
+            
+            Timer {
+                interval: 2000
+                running: true
+                repeat: false
+                onTriggered: lockSurface.isArmed = true
+            }
 
-            Lock.LockScreen {
+            // Listen for the wake signal from hypridle
+            FileView {
+                path: "/var/tmp/qs-wake"
+                watchChanges: true
+                onTextChanged: {
+                    if (!lockSurface.isArmed) return;
+
+                    console.log("[Quickshell] Hardware wake detected, forcing VRAM refresh...")
+                    uiLoader.active = false
+                    refreshTimer.restart()
+                }
+            }
+
+            // Wait 50ms for Wayland to clear, then rebuild the UI
+            Timer {
+                id: refreshTimer
+                interval: 50
+                repeat: false
+                onTriggered: uiLoader.active = true
+            }
+            
+            Rectangle {
                 anchors.fill: parent
-                context: lockContext
-                // Pass the hardware name down to the visual component
-                targetScreen: lockSurface.screen
+                color: "black"
+            }
+
+            Component {
+                id: lockUIComponent
+                Lock.LockScreen {
+                    context: lockContext
+                    targetScreen: lockSurface.screen
+                }
+            }
+
+            Loader {
+                id: uiLoader
+                anchors.fill: parent
+                active: true
+                sourceComponent: lockUIComponent
             }
         }
     }
