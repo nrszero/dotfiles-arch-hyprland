@@ -7,6 +7,9 @@ CURRENT_USER=$(whoami)
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/var/tmp}" # resolves to /run/user/*
 LOG_FILE="$RUNTIME_DIR/awww_wallpaper.log"
 PID_FILE="$RUNTIME_DIR/awww_sleep.pid"
+WALLPAPER_BASE="/usr/share/wallpapers"
+STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
+DEFAULT_FOLDER="anime-scenery"
 
 # Initialize log file
 echo "--- Starting awww_randomize script for $CURRENT_USER ---" > "$LOG_FILE"
@@ -70,9 +73,6 @@ if [ $# -lt 1 ] || [ ! -d "$1" ]; then
 	exit 1
 fi
 
-WALLPAPER_BASE="/usr/share/wallpapers"
-STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
-
 # If hyprland autostart gave us the parent directory, load the last used subfolder instead
 if [ "$1" = "$WALLPAPER_BASE" ]; then
     if [ -f "$STATE_FILE" ]; then
@@ -81,9 +81,9 @@ if [ "$1" = "$WALLPAPER_BASE" ]; then
         echo "[$(date '+%H:%M:%S')] Using saved folder: $FOLDER_NAME" >> "$LOG_FILE"
     else
         # First run ever → pick first folder alphabetically
-        FOLDER_NAME=$(find -L "$WALLPAPER_BASE" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | head -n1)
+        FOLDER_NAME="$DEFAULT_FOLDER"
         TARGET_DIR="$WALLPAPER_BASE/$FOLDER_NAME"
-        echo "[$(date '+%H:%M:%S')] No saved folder found, using first: $FOLDER_NAME" >> "$LOG_FILE"
+        echo "[$(date '+%H:%M:%S')] No saved folder found, using default: $FOLDER_NAME" >> "$LOG_FILE"
     fi
 else
     TARGET_DIR="$1"
