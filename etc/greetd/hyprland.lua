@@ -43,6 +43,7 @@ hl.config({
             size = 8,
             passes = 5,
             vibrancy = 0.1696,
+            brightness = 0.7,
             popups = true,
             popups_ignorealpha = 0.1,
         },
