@@ -14,6 +14,9 @@ hl.config({
             natural_scroll = false,
         },
     },
+    cursor = {
+        default_monitor = LEFT_MONITOR,
+    },
 })
 
 hl.device({

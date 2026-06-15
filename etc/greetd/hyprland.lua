@@ -48,6 +48,9 @@ hl.config({
             popups_ignorealpha = 0.1,
         },
     },
+    cursor = {
+        default_monitor = LEFT_MONITOR,
+    },
 })
 
 hl.device({
