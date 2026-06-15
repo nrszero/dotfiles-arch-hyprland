@@ -113,7 +113,7 @@ while true; do
 
 			# 1. Set the wallpaper and extract colors
 			awww img --resize="$RESIZE_TYPE" "$img" </dev/null
-			wal -i "$img" -n -q
+			wal -i "$img" -n -q -s
 			if [ -f "$HOME/.cache/wal/colors.sh" ]; then
 			    source "$HOME/.cache/wal/colors.sh"
 			else
