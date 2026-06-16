@@ -16,7 +16,7 @@ PanelWindow {
 
     anchors { top: true; right: true; }
     width: 400
-    implicitHeight: Math.min(root.screenModel.height, notifCol.implicitHeight + 20)
+    implicitHeight: Math.min(root.screenModel ? root.screenModel.height : 1080, notifCol.implicitHeight + 20)
 
     visible: (root.notifModel.count > 0) && 
              (Hyprland.focusedMonitor.name === root.screenModel.name)

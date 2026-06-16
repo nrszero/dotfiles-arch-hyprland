@@ -23,7 +23,7 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusiveZone: barVisible ? height : 0
     exclusionMode: ExclusionMode.Normal
-    WlrLayershell.keyboardFocus: WlrLayershell.KeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: KeyboardFocus.OnDemand
 
     mask: Region {
         regions: [
@@ -32,7 +32,7 @@ PanelWindow {
     }
 
     property var hMonitor: {
-        if (!Hyprland.monitors || !Hyprland.monitors.values) return null;
+        if (!Hyprland.monitors || !Hyprland.monitors.values || !root.screenModel) return null;
         for (let m of Hyprland.monitors.values) {
             if (m.name === root.screenModel.name) {
                 return m;
