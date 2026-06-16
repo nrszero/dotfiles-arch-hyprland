@@ -68,6 +68,8 @@ ShellRoot {
             screen: modelData
             
             property bool isMain: modelData.x === 0
+
+            property bool isInputReady: false
             
             anchors.top: true
             anchors.bottom: true
@@ -102,6 +104,7 @@ ShellRoot {
                     if (responseRequired) {
                         inputField.text = ""
                         inputField.echoMode = echo ? TextInput.Normal : TextInput.Password
+                        inputField.inputMethodHints = echo ? Qt.ImhNone : Qt.ImhSensitiveData
                         inputField.forceActiveFocus()
                         loginState.state = "password"
                     }
@@ -112,8 +115,9 @@ ShellRoot {
                     statusText.color = theme.error
                     loginState.state = "username"
                     inputField.text = ""
-                inputField.echoMode = TextInput.Normal
-                inputField.forceActiveFocus()
+                    inputField.echoMode = TextInput.Normal
+                    inputField.inputMethodHints = Qt.ImhNone
+                    inputField.forceActiveFocus()
                 }
 
                 function onReadyToLaunch() {
@@ -141,6 +145,7 @@ ShellRoot {
 
             // Master
             Item {
+                id: content
                 anchors.fill: parent
                 visible: isMain
 
@@ -177,20 +182,67 @@ ShellRoot {
                     opacity: 0.18
                 }
 
-                // Auto-focus input when the surface appears
+                // Auto-focus intelligently targets the cover or the input
                 Timer {
-                    interval: 100
-                    running: true
-                    repeat: false
+                    interval: 500
+                    running: isMain && content.visible
+                    repeat: true
                     onTriggered: {
-                        if (isMain) inputField.forceActiveFocus()
+                        if (content.visible) {
+                            if (!isInputReady && !coverItem.activeFocus) {
+                                coverItem.forceActiveFocus()
+                            } else if (isInputReady && !inputField.activeFocus) {
+                                inputField.forceActiveFocus()
+                            }
+                        }
                     }
                 }
                 
+                // THE SCREEN COVER
+                Item {
+                    id: coverItem
+                    anchors.fill: parent
+                    visible: isMain && !isInputReady
+                    
+                    // Allow this item to capture the broken Wayland keystroke
+                    focus: visible
+
+                    Rectangle {
+                        width: 300
+                        height: 70
+                        anchors.centerIn: parent
+                        
+                        // Hooking into your Pywal theme for a seamless look
+                        color: theme.surface
+                        border.width: theme.borderWidth
+                        border.color: theme.borderColor
+                        radius: theme.radius
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Press any key to unlock"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: theme.text
+                        }
+                    }
+
+                    Keys.onPressed: (event) => {
+                        console.log("[LockScreen] Cover dismissed via keyboard.")
+                        isInputReady = true
+                        event.accepted = true // Prevent the corrupted modifier state from passing through
+                    }
+                }
+
                 // CENTERED LOCK CARD
                 Rectangle {
                     anchors.fill: parent
                     color: "transparent"
+                    
+                    // Hide the actual password card until the cover is gone
+                    opacity: (isMain && isInputReady) ? 1.0 : 0.0
+                    visible: isMain && isInputReady
+                    enabled: isInputReady
 
                     Rectangle {   
                         width: 400
@@ -244,18 +296,17 @@ ShellRoot {
                                     color: theme.text
                                     font.pixelSize: theme.fontSize
                                     selectByMouse: true
-                                    focus: isMain
+                                    focus: true
                                 
-                                    // Default to username input
                                     echoMode: TextInput.Normal 
                                     Keys.onReturnPressed: attemptLogin()
+                                    Component.onCompleted: cursorPosition = text.length
                         
                                     MouseArea {
                                         anchors.fill: parent
                                         cursorShape: Qt.IBeamCursor
                                         onPressed: (mouse) => {
                                             inputField.forceActiveFocus()
-                                            // Pass the click through to the text input so cursor positioning works
                                             mouse.accepted = false 
                                         }
                                     }

@@ -16,26 +16,16 @@ ShellRoot {
         property bool unlockInProgress: false
         property bool showFailure: false
         
-        property bool isWaking: false
-
         signal unlocked()
 
         onCurrentTextChanged: showFailure = false
 
         function tryUnlock() {
-            if (isWaking) return;
-
             if (currentText.trim() === "") return
             unlockInProgress = true
             pam.start()
         }
         
-        function refreshPam() {
-            console.log("[PAM] Executing invisible reset ping...")
-            isWaking = true
-            pam.start()
-        }
-
         PamContext {
             id: pam
 
@@ -46,26 +36,16 @@ ShellRoot {
             onPamMessage: (message, responseRequired, echo) => {
                 console.log("[PAM] Message:", message, "responseRequired:", this.responseRequired)
                 if (this.responseRequired) {
-                    // NEW: Intercept the prompt if waking, otherwise act normally
-                    if (lockContext.isWaking) {
-                        pam.respond("dummy_reset")
-                    } else {
-                        pam.respond(lockContext.currentText)
-                    }
+                    pam.respond(lockContext.currentText)
                 }
             }
 
             onCompleted: result => {
-                if (lockContext.isWaking) {
-                    console.log("[PAM] Invisible reset finished. Socket is clean.")
-                    lockContext.isWaking = false
-                    return 
-                }
-
                 console.log("[PAM] Completed with result:", result)
                 if (result === PamResult.Success) {
                     lockContext.unlocked()
                 } else {
+                    console.log("[PAM] Genuine authentication failure.")
                     lockContext.currentText = ""
                     lockContext.showFailure = true
                     lockContext.unlockInProgress = false
@@ -100,7 +80,6 @@ ShellRoot {
                     console.log("[Quickshell] Hardware wake detected, forcing VRAM refresh...")
                     uiLoader.active = false
                     refreshTimer.restart()
-                    lockContext.refreshPam()
                 }
             }
 

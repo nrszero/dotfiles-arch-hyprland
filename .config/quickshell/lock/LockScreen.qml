@@ -16,6 +16,9 @@ Item {
     // Strict: True ONLY when Wayland confirms this is definitely the main screen
     property bool isMain: !!(targetScreen && targetScreen.x === 0)
     
+    // Tracks if the user has dismissed the cover
+    property bool isInputReady: false
+
     onIsMainChanged: {
         // Use the native Hyprland module to dispatch the command
         if (isMain && targetScreen && targetScreen.name) {
@@ -107,15 +110,6 @@ Item {
         anchors.fill: parent
         visible: isMain
 
-        //onVisibleChanged: {
-        //    if (!visible) {
-        //        console.log("[LockScreen] Monitors sleeping -> Dropping focus and clearing input.")
-        //        content.forceActiveFocus()
-        //        inputField.text = ""   
-        //        context.currentText = ""
-        //    }
-        //}
-      
         // Wallpaper        
         Item {
             anchors.fill: parent
@@ -150,25 +144,67 @@ Item {
             opacity: 0.18
         }
         
-        // Auto-focus input when the surface appears
+        // Auto-focus intelligently targets the cover or the input
         Timer {
             interval: 500
-            running: isMain && content.visible && !inputField.activeFocus
+            running: isMain && content.visible
             repeat: true
             onTriggered: {
-                console.log("[LockScreen] Auto-focus Timer fired for", targetScreen ? targetScreen.name : "unknown")
                 if (content.visible) {
-                    inputField.forceActiveFocus()
+                    if (!isInputReady && !coverItem.activeFocus) {
+                        coverItem.forceActiveFocus()
+                    } else if (isInputReady && !inputField.activeFocus) {
+                        inputField.forceActiveFocus()
+                    }
                 }
             }
         }
-        
+
+        // THE SCREEN COVER
+        Item {
+            id: coverItem
+            anchors.fill: parent
+            visible: isMain && !isInputReady
+            
+            // Allow this item to capture the broken Wayland keystroke
+            focus: visible
+
+            Rectangle {
+                width: 300
+                height: 70
+                anchors.centerIn: parent
+                
+                // Hooking into your Pywal theme for a seamless look
+                color: theme.surface
+                border.width: theme.borderWidth
+                border.color: theme.borderColor
+                radius: theme.radius
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Press any key to unlock"
+                    font.pixelSize: 18
+                    font.bold: true
+                    color: theme.text
+                }
+            }
+
+            Keys.onPressed: (event) => {
+                console.log("[LockScreen] Cover dismissed via keyboard.")
+                isInputReady = true
+                event.accepted = true // Prevent the corrupted modifier state from passing through
+            }
+        }
+
         // CENTERED LOCK CARD
         Rectangle {
             anchors.fill: parent
             color: "transparent"
-            opacity: isMain ? 1.0 : 0.0
-            enabled: true
+
+            // Hide the actual password card until the cover is gone
+            opacity: (isMain && isInputReady) ? 1.0 : 0.0
+            visible: isMain && isInputReady
+            enabled: isInputReady
 
             Rectangle {
                 width: 400
@@ -222,13 +258,14 @@ Item {
                             color: theme.text
                             font.pixelSize: theme.fontSize
                             selectByMouse: true
+                            focus: true
+
                             echoMode: TextInput.Password
                             inputMethodHints: Qt.ImhSensitiveData
-                            focus: true
-                            
                             text: context.currentText
                             onTextEdited: context.currentText = text
                             Keys.onReturnPressed: context.tryUnlock()
+                            Component.onCompleted: cursorPosition = text.length
 
                             MouseArea {
                                 anchors.fill: parent
