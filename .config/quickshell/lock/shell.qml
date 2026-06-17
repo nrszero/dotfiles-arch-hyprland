@@ -45,7 +45,6 @@ ShellRoot {
                 if (result === PamResult.Success) {
                     lockContext.unlocked()
                 } else {
-                    console.log("[PAM] Genuine authentication failure.")
                     lockContext.currentText = ""
                     lockContext.showFailure = true
                     lockContext.unlockInProgress = false

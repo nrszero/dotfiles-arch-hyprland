@@ -85,19 +85,6 @@ Item {
         }
     }
     
-    // Clear input + refocus after failed attempt
-    Connections {
-        target: context
-        function onShowFailureChanged() {
-            if (context.showFailure && isMain) {
-                console.log("[LockScreen] showFailure → clearing input and refocusing on", targetScreen ? targetScreen.name : "unknown")
-                inputField.text = ""
-                context.currentText = ""
-                inputField.forceActiveFocus()
-            }
-        }
-    }
-
     Rectangle {
         anchors.fill: parent
         color: "black"
