@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Services.Greetd
 import Quickshell.Wayland
 import Quickshell.Io
-import QtQuick.Effects
 import QtQml
 
 ShellRoot {
@@ -157,21 +156,13 @@ ShellRoot {
                     Image {
                         id: wallpaper
                         anchors.fill: parent
-                        anchors.margins: -30
                         source: "file:///var/tmp/greeter-wallpaper"
                         fillMode: Image.PreserveAspectCrop
+
+                        // Disable async loading to prevent cross-thread Wayland surface crashes
                         asynchronous: true
                         cache: false
                         smooth: true
-
-                        layer.enabled: true
-                        layer.effect: MultiEffect {
-                            blurEnabled: true
-                            blurMax: 42
-                            blur: 0.6
-                            brightness: -0.12
-                            saturation: 0.88
-                        }
                     }
                 }
 
@@ -179,7 +170,7 @@ ShellRoot {
                 Rectangle {
                     anchors.fill: parent
                     color: "#000000"
-                    opacity: 0.18
+                    opacity: 0.6
                 }
 
                 // Auto-focus intelligently targets the cover or the input

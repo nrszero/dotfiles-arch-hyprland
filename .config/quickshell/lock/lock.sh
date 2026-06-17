@@ -46,6 +46,9 @@ log "Current working directory: $(pwd)"
 log "Launching quickshell..."
 log "Command: quickshell -p lock/shell.qml"
 
+export QSG_RHI_BACKEND=vulkan # Prevent quickshell crash after sleep
+export QSG_RENDER_LOOP=basic # Prevent DPMS deadlock
+
 # Run quickshell and capture everything
 quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1
 # WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1

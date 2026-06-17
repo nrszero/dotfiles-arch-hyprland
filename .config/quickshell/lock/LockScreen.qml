@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
@@ -119,21 +118,13 @@ Item {
             Image {
                 id: wallpaper
                 anchors.fill: parent
-                anchors.margins: -30
                 source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
                 fillMode: Image.PreserveAspectCrop
-                asynchronous: true
+
+                // Disable async loading to prevent cross-thread Wayland surface crashes
+                asynchronous: false
                 cache: false
                 smooth: true
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    blurEnabled: true
-                    blurMax: 42
-                    blur: 0.6
-                    brightness: -0.12
-                    saturation: 0.88
-                }
             }
         }
 
@@ -141,7 +132,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "#000000"
-            opacity: 0.18
+            opacity: 0.6
         }
         
         // Auto-focus intelligently targets the cover or the input
