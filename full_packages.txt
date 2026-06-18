@@ -51,3 +51,4 @@ meson
 npm
 nwg-look
 gnome-themes-extra
+wireless-regdb
