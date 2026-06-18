@@ -15,7 +15,7 @@ PanelWindow {
     screen: root.screenModel
 
     anchors { top: true; right: true; }
-    width: 400
+    implicitWidth: 400
     implicitHeight: Math.min(root.screenModel ? root.screenModel.height : 1080, notifCol.implicitHeight + 20)
 
     visible: (root.notifModel.count > 0) && 

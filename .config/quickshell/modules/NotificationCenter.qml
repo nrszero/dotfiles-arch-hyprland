@@ -15,7 +15,7 @@ PopupWindow {
     anchor.edges: Edges.Bottom
     anchor.margins.top: 6
 
-    width: 400
+    implicitWidth: 400
     implicitHeight: Math.min(400, contentColumn.implicitHeight + 40) 
     visible: false
     color: "transparent"

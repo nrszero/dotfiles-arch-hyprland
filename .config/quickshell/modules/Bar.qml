@@ -21,9 +21,9 @@ PanelWindow {
     required property bool barVisible
 
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.exclusiveZone: barVisible ? height : 0
+    WlrLayershell.exclusiveZone: barVisible ? implicitHeight : 0
     exclusionMode: ExclusionMode.Normal
-    WlrLayershell.keyboardFocus: KeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     mask: Region {
         regions: [
@@ -87,7 +87,7 @@ PanelWindow {
     property int baseWs: monitorIndex
 
     anchors {top: true; left: true; right: true; }
-    height: 50
+    implicitHeight: 50
     visible: barVisible
     color: "transparent"
      
@@ -102,17 +102,16 @@ PanelWindow {
 
     BatteryProc { id: battery }
 
-    RowLayout {
+    Item {
         id: mainLayout
         anchors.fill: parent
         anchors.margins: 10
-        spacing: theme.spacing
         
         // LEFT SIDE
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignLeft
-            spacing: 8
+            spacing: theme.spacing
 
             // Time Pill
             BarModule {
@@ -143,115 +142,109 @@ PanelWindow {
             }
         }
         
-        Item { Layout.fillWidth: true }
-
         // CENTER
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.leftMargin: -145
-            spacing: 8
+        BarModule {
+            id: workspaceGroup
+            anchors.centerIn: parent
+            implicitWidth: workspaceRow.implicitWidth + 20
 
-            BarModule {
-                id: workspaceGroup
-                implicitWidth: workspaceRow.implicitWidth + 20
-
-                Row {
-                    id: workspaceRow
-                    anchors.centerIn: parent
-                    spacing: 6
-                    
-                    Repeater {
-                        model: root.totalWorkspaces
-                        delegate: Rectangle {
-                            width: isActive ? 28 : 22
-                            height: 22
-                            radius: theme.radius
-     
-                            property int wsId: index + 1
-                            property bool isActive: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
-                            property bool hasWindows: {
-                                if (!Hyprland.toplevels.values) return false
-                                for (let t of Hyprland.toplevels.values) {
-                                    if (t.workspace && t.workspace.id === wsId) return true
-                                }
-                                return false
+            Row {
+                id: workspaceRow
+                anchors.centerIn: parent
+                spacing: theme.spacing
+                
+                Repeater {
+                    model: root.totalWorkspaces
+                    delegate: Rectangle {
+                        width: isActive ? 28 : 22
+                        height: 22
+                        radius: theme.radius
+ 
+                        property int wsId: index + 1
+                        property bool isActive: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
+                        property bool hasWindows: {
+                            if (!Hyprland.toplevels.values) return false
+                            for (let t of Hyprland.toplevels.values) {
+                                if (t.workspace && t.workspace.id === wsId) return true
                             }
+                            return false
+                        }
 
-                            color: isActive ? theme.accent : (hasWindows ? theme.surface : "transparent")
-                            border.width: (isActive || hasWindows) ? 0 : 1
-                            border.color: Qt.rgba(1,1,1, 0.1)
-                            
-                            Behavior on width { NumberAnimation { duration: 200 } }
-                            Behavior on color { ColorAnimation { duration: 200 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                color: isActive ? theme.text : theme.subText
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeSm
-                                font.bold: isActive
-                                text: index + 1
-                                visible: isActive || hasWindows
-                            }
+                        color: isActive ? theme.accent : (hasWindows ? theme.surface : "transparent")
+                        border.width: (isActive || hasWindows) ? 0 : 1
+                        border.color: Qt.rgba(1,1,1, 0.1)
                         
+                        Behavior on width { NumberAnimation { duration: 200 } }
+                        Behavior on color { ColorAnimation { duration: 200 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            color: isActive ? theme.text : theme.subText
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: isActive
+                            text: index + 1
+                            visible: isActive || hasWindows
+                        }
+                    
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Hyprland.dispatch(`hl.dsp.focus({workspace = ${index + 1}})`)
+                        }
+                    }
+                }
+            }
+        }
+            
+        Loader {
+            id: trayLoader
+            active: root.visible
+            anchors.left: workspaceGroup.right
+            anchors.leftMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+
+            sourceComponent: BarModule {
+                visible: trayRepeater.count > 0
+                implicitWidth: systemTrayRow.implicitWidth + 20
+                Row {
+                    id: systemTrayRow
+                    anchors.centerIn: parent
+                    spacing: theme.spacing
+                    Repeater {
+                        id: trayRepeater
+                        model: SystemTray.items
+                        delegate: Rectangle {
+                            width: 22; height: 22; color: "transparent"; radius: theme.radius
+                            QsMenuAnchor { id: menuAnchor; anchor.item: sysTrayIcon }
+                            Image {
+                                id: sysTrayIcon
+                                visible: modelData.icon !== ""
+                                anchors.centerIn: parent; width: 18; height: 18
+                                source: modelData.icon; fillMode: Image.PreserveAspectFit
+                            }
                             MouseArea {
                                 anchors.fill: parent
-                                hoverEnabled: true
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: Hyprland.dispatch(`hl.dsp.focus({workspace = ${index + 1}})`)
-                            }
-                        }
-                    }
-                }
-            }
-            
-            Loader {
-                id: trayLoader
-                active: root.visible
-                sourceComponent: BarModule {
-                    visible: trayRepeater.count > 0
-                    implicitWidth: systemTrayRow.implicitWidth + 20
-                    Row {
-                        id: systemTrayRow
-                        anchors.centerIn: parent
-                        spacing: 8
-                        Repeater {
-                            id: trayRepeater
-                            model: SystemTray.items
-                            delegate: Rectangle {
-                                width: 22; height: 22; color: "transparent"; radius: theme.radius
-                                QsMenuAnchor { id: menuAnchor; anchor.item: sysTrayIcon }
-                                Image {
-                                    id: sysTrayIcon
-                                    visible: modelData.icon !== ""
-                                    anchors.centerIn: parent; width: 18; height: 18
-                                    source: modelData.icon; fillMode: Image.PreserveAspectFit
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: (mouse) => {
-                                        if (mouse.button === Qt.LeftButton) modelData.activate()
-                                        else if (modelData.hasMenu) { menuAnchor.menu = modelData.menu; menuAnchor.open() }
-                                        else modelData.secondaryActivate()
-                                    }
+                                onClicked: (mouse) => {
+                                    if (mouse.button === Qt.LeftButton) modelData.activate()
+                                    else if (modelData.hasMenu) { menuAnchor.menu = modelData.menu; menuAnchor.open() }
+                                    else modelData.secondaryActivate()
                                 }
                             }
                         }
                     }
                 }
             }
-
         }
-        
-        Item { Layout.fillWidth: true }
 
         // RIGHT SIDE
         RowLayout {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignRight
-            spacing: 8
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: theme.spacing
             
             BarModule {
                 implicitWidth: statusRow.implicitWidth + 16
@@ -259,7 +252,7 @@ PanelWindow {
                 RowLayout {
                     id: statusRow
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: theme.spacing
                     
                     // Battery
                     RowLayout {
