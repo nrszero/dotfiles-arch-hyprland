@@ -10,6 +10,8 @@ PID_FILE="$RUNTIME_DIR/awww_sleep.pid"
 WALLPAPER_BASE="/usr/share/wallpapers"
 STATE_FILE="/var/tmp/current_wallpaper_folder.txt"
 DEFAULT_FOLDER="anime-scenery"
+BLUR_RADIUS="0x8" # 0x6 = light, 0x10–0x12 = nice frosted, 0x15+ = very soft
+LOCK_WALL_TMP="/var/tmp/greeter-wallpaper.tmp"
 
 # Initialize log file
 echo "--- Starting awww_randomize script for $CURRENT_USER ---" > "$LOG_FILE"
@@ -106,10 +108,19 @@ while true; do
 			echo "$SLEEP_PID" > "$PID_FILE"
 			wait $SLEEP_PID
 		else
-			# Atomic Image Backup
-			cp "$img" "/var/tmp/greeter-wallpaper.tmp"
-			chmod 644 "/var/tmp/greeter-wallpaper.tmp"
-			mv "/var/tmp/greeter-wallpaper.tmp" "/var/tmp/greeter-wallpaper"
+            # Uses imagemagick to create blurred background
+			convert "$img" \
+                -resize 2560x1440^ \
+                -gravity center \
+                -extent 2560x1440 \
+                -blur "$BLUR_RADIUS" \
+                -quality 85 \
+                "$LOCK_WALL_TMP"
+
+            chmod 644 "$LOCK_WALL_TMP"
+            mv "$LOCK_WALL_TMP" "/var/tmp/greeter-wallpaper"
+
+            echo "[$(date '+%H:%M:%S')] Created blurred lockscreen wallpaper (blur=$BLUR_RADIUS)" >> "$LOG_FILE"
 
 			# 1. Set the wallpaper and extract colors
 			awww img --resize="$RESIZE_TYPE" "$img" </dev/null

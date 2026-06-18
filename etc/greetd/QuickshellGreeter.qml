@@ -48,7 +48,7 @@ ShellRoot {
                 theme.accent = pywal.colors.color4
                 theme.error  = pywal.colors.color1
                 theme.borderColor = pywal.colors.color10
-                theme.surface = parseHex(pywal.colors.color0, 0.40) 
+                theme.surface = parseHex(pywal.colors.color0, 0.80) 
                 
             } catch(e) {
                 console.log("[Greeter Theme] Failed to parse Pywal colors.json", e)
