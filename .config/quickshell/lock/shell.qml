@@ -82,12 +82,22 @@ ShellRoot {
                 }
             }
 
-            // Wait 50ms for Wayland to clear, then rebuild the UI
+            // Wait 300ms for Wayland to clear, then rebuild the UI
             Timer {
                 id: refreshTimer
-                interval: 50
+                interval: 300
                 repeat: false
-                onTriggered: uiLoader.active = true
+                onTriggered: {
+                    // Defensively check if the Wayland screen actually exists yet
+                    if (lockSurface.screen && lockSurface.screen.name !== "") {
+                        console.log("[Quickshell] Screen is valid (" + lockSurface.screen.name + "), rebuilding UI.")
+                        uiLoader.active = true
+                    } else {
+                        console.log("[Quickshell] Screen not ready yet, delaying VRAM refresh...")
+                        // If the screen isn't ready, loop the timer until it is
+                        refreshTimer.start() 
+                    }
+                }
             }
             
             Rectangle {
