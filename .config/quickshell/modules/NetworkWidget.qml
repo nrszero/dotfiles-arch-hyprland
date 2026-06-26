@@ -9,29 +9,29 @@ Item {
     // -------------------------------------------------------------------------
     // API Properties
     // -------------------------------------------------------------------------
-    
     // The interface to monitor, as requested: enp15s0
     property string interfaceName: ""
-    
-    // Polling interval in milliseconds - 10 seconds
+    property string wifiInterfaceName: ""
     property int pollInterval: 10000
     
-    // Internal state tracking
     // 0: Disconnected/Error, 1: Connected, 2: Connecting
     property int connectionState: 0
     property string rawOutput: ""
+    
+    property ListModel wifiModel: ListModel {}
+    property bool isScanning: false
+    property bool isWifiActiveRoute: false
+    property string currentWifiSsid: ""
 
     // Layout sizing - adopt the size of the icon text
     implicitWidth: 30
     implicitHeight: 30
 
     // -------------------------------------------------------------------------
-    // Backend Logic: Process & Timer
+    // Backend Logic: Ethernet Polling
     // -------------------------------------------------------------------------
-
     Process {
         id: nmcliCmd
-        
         // Use the -g flag to get only the state field
         // Use list format to prevent shell injection
         command: ["nmcli", "-g", "GENERAL.STATE", "device", "show", root.interfaceName]
@@ -44,10 +44,6 @@ Item {
             onStreamFinished: {
                 // Store raw text for debugging
                 root.rawOutput = this.text.trim()
-                
-                // Parse the output
-                // Expected format: "100 (connected)" or "20 (unavailable)"
-                
                 const out = root.rawOutput.toLowerCase()
                 
                 if (out.indexOf("connected")!== -1 && out.indexOf("disconnected") === -1) {
@@ -60,6 +56,138 @@ Item {
             }
         }
     }
+    
+    // -------------------------------------------------------------------------
+    // Backend Logic: Wi-Fi Active Connection Polling (NEW)
+    // -------------------------------------------------------------------------
+    Process {
+        id: wifiActiveCmd
+        // FIX: using -g gets ONLY the value, removing the "GENERAL.CONNECTION:" prefix
+        command: ["nmcli", "-g", "GENERAL.CONNECTION", "device", "show", root.wifiInterfaceName]
+        running: false
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const activeConn = this.text.trim();
+                // NetworkManager returns "--" if disconnected, or nothing if interface is down
+                if (activeConn === "" || activeConn === "--") {
+                    root.currentWifiSsid = "";
+                } else {
+                    root.currentWifiSsid = activeConn;
+                }
+            }
+        }
+    }
+    
+    // -------------------------------------------------------------------------
+    // Backend Logic: Check Default Route (Active vs Inactive)
+    // -------------------------------------------------------------------------
+    Process {
+        id: routeCheckCmd
+        command: ["nmcli", "-t", "-f", "DEVICE,DEFAULT", "dev"]
+        running: false
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n");
+                let isActive = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const parts = lines[i].split(":");
+                    // parts[0] is the interface (wlp14s0), parts[1] is yes/no
+                    if (parts.length >= 2 && parts[0] === root.wifiInterfaceName && parts[1] === "yes") {
+                        isActive = true;
+                        break;
+                    }
+                }
+                root.isWifiActiveRoute = isActive;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Backend Logic: Wi-Fi Scanning
+    // -------------------------------------------------------------------------
+    Process {
+        id: wifiScanCmd
+        // -t (terse) makes it colon-separated. 
+        // -f requests specific fields: SSID, Signal %, Security protocols, In-Use (*)
+        command: ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi", "list"]
+        running: false
+        
+        onRunningChanged: root.isScanning = running
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.wifiModel.clear();
+                const lines = this.text.trim().split("\n");
+                
+                let seenSsids = []; // Prevent duplicate SSIDs in the list
+                
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i] === "") continue;
+                    
+                    // Split by colon (Note: this naive split struggles if an SSID contains a literal colon)
+                    const parts = lines[i].split(":");
+                    if (parts.length >= 4) {
+                        const ssid = parts[0];
+                        if (ssid === "" || seenSsids.includes(ssid)) continue;
+                        
+                        seenSsids.push(ssid);
+
+                        const inUse = (parts[3] === "*");
+                        root.wifiModel.append({
+                            ssid: ssid,
+                            signal: parseInt(parts[1]),
+                            security: parts[2],
+                            inUse: inUse
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Backend Logic: Wi-Fi Connecting & Disconnecting
+    // -------------------------------------------------------------------------
+    Process {
+        id: wifiConnectCmd
+        property string targetSsid: ""
+        property string password: ""
+        
+        command: password === "" 
+                 ? ["nmcli", "dev", "wifi", "connect", targetSsid] 
+                 : ["nmcli", "dev", "wifi", "connect", targetSsid, "password", password]
+        running: false
+        
+        // Force a rescan when the connection attempt finishes
+        onRunningChanged: if (!running) forceScan()
+    }
+    
+    Process {
+        id: wifiDisconnectCmd
+        command: ["nmcli", "device", "disconnect", root.wifiInterfaceName]
+        running: false
+        
+        // Force a rescan when the disconnect finishes
+        onRunningChanged: if (!running) forceScan()
+    }
+
+    function connectToWifi(ssid, password) {
+        wifiConnectCmd.targetSsid = ssid;
+        wifiConnectCmd.password = password;
+        wifiConnectCmd.running = true;
+    }
+    
+    function disconnectWifi() {
+        wifiDisconnectCmd.running = true;
+    }
+
+    function forceScan() {
+        if (!wifiScanCmd.running) wifiScanCmd.running = true;
+        if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+    }
 
     Timer {
         id: ticker
@@ -69,12 +197,12 @@ Item {
         triggeredOnStart: true // Update immediately on load
         
         onTriggered: {
-            // Concurrency Control:
             // Only start if the previous process has finished.
             // This prevents a pile-up of zombie processes if nmcli hangs.
-            if (!nmcliCmd.running) {
-                nmcliCmd.running = true
-            }
+            if (!nmcliCmd.running) nmcliCmd.running = true;
+            if (!wifiScanCmd.running) wifiScanCmd.running = true;
+            if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+            if (!routeCheckCmd.running) routeCheckCmd.running = true;
         }
     }
 }

@@ -13,7 +13,7 @@ PopupWindow {
     anchor.edges: Edges.Bottom
     anchor.margins.top: 6
 
-    implicitWidth: 300
+    implicitWidth: 400
     implicitHeight: 200
     visible: false
     color: "transparent"
@@ -40,7 +40,6 @@ PopupWindow {
     Connections {
         target: popupHover
         function onHoveredChanged() {
-            console.log("[NotifCenter] popupHover hovered changed →", popupHover.hovered)
             updateHover()
         }
     }
@@ -72,52 +71,67 @@ PopupWindow {
                 font.pixelSize: theme.fontSizeMd
                 font.bold: true
             }
-            
+
+            // Bluetooth List
             ListView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 model: Bluetooth.devices.values
-                spacing: 6
+                spacing: 4
                 clip: true
 
-                delegate: RowLayout {
+                delegate: Rectangle {
                     width: ListView.view.width
-                    spacing: 8
-                    
-                    // Icon
-                    Text {
-                        text: modelData.connected ? "󰂯" : "󰂲"
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeLg
-                        color: modelData.connected ? theme.success : theme.subText
-                    }
-                    
-                    // Device Name
-                    Text {
-                        text: modelData.name || "Unknown Device"
-                        color: theme.text
-                        font.family: theme.fontFace
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-                    
-                    // Battery Level (only show if available)
-                    Text {
-                        visible: modelData.battery >= 0
-                        text: Math.round(modelData.battery * 100) + "%"
-                        color: modelData.battery < 0.2 ? theme.urgent : theme.success
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeSm
-                    }
+                    height: 36
+                    color: modelData.connected ? theme.surface : "transparent"
+                    radius: 4
 
-                    // Connect / Disconnect Button
-                    Button {
-                        text: modelData.connected ? "Disconnect" : "Connect"
-                        onClicked: {
-                            if (modelData.connected) {
-                                modelData.disconnect()
-                            } else {
-                                modelData.connect()
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
+
+                        // Icon
+                        Text {
+                            text: modelData.connected ? "󰂯" : "󰂲"
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeLg
+                            color: modelData.connected ? theme.success : theme.subText
+                        }
+                        
+                        // Device Name
+                        Text {
+                            text: modelData.name || "Unknown Device"
+                            color: theme.text
+                            font.family: theme.fontFace
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                        
+                        // Battery Level (only show if available)
+                        Text {
+                            visible: modelData.battery >= 0
+                            text: Math.round(modelData.battery * 100) + "%"
+                            color: modelData.battery < 0.2 ? theme.urgent : theme.success
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                        }
+
+                        // Connect / Disconnect Button
+                        Button {
+                            background: Rectangle {
+                                color: parent.hovered ? theme.accent : theme.surface
+                                radius: theme.radius
+                            }
+
+                            text: modelData.connected ? "Disconnect" : "Connect"
+                            onClicked: {
+                                if (modelData.connected) {
+                                    modelData.disconnect()
+                                } else {
+                                    modelData.connect()
+                                }
                             }
                         }
                     }

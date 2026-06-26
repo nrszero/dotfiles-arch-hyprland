@@ -24,8 +24,6 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore 
 
-    // Repeater is not a ListView because you can't completely hide items in List.
-    // Margins didn't get removed causing items to not stay at the top of the list.
     Flickable {
         id: scrollArea
         anchors.fill: parent
