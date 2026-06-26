@@ -1,3 +1,5 @@
+awww-git
+brightnessctl
 hyprland
 hypridle
 hyprshot
@@ -52,3 +54,4 @@ npm
 nwg-look
 gnome-themes-extra
 wireless-regdb
+xdg-desktop-portal-hyprland
