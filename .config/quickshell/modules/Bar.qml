@@ -302,6 +302,7 @@ PanelWindow {
                                 bluetoothPopup.visible = false
                                 notifCenter.visible = false
                                 powerButtonPopup.visible = false
+                                shortcutsPopup.visible = false
                                 volumePopup.visible = !volumePopup.visible
                             }
                         }
@@ -325,6 +326,7 @@ PanelWindow {
                                 notifCenter.visible = false
                                 volumePopup.visible = false
                                 powerButtonPopup.visible = false
+                                shortcutsPopup.visible = false
                                 networkPopup.visible = !networkPopup.visible
                             }
                         }
@@ -348,6 +350,7 @@ PanelWindow {
                                 notifCenter.visible = false
                                 powerButtonPopup.visible = false
                                 volumePopup.visible = false
+                                shortcutsPopup.visible = false
                                 bluetoothPopup.visible = !bluetoothPopup.visible
                             }
                         }
@@ -392,7 +395,32 @@ PanelWindow {
                                 bluetoothPopup.visible = false
                                 volumePopup.visible = false
                                 powerButtonPopup.visible = false
+                                shortcutsPopup.visible = false
                                 notifCenter.visible = !notifCenter.visible
+                            }
+                        }
+                    }
+                    
+                    // Shortcuts Trigger
+                    Text {
+                        id: shortcutsIcon
+                        text: "󰌌"
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: theme.text
+                        
+                        HoverHandler { id: shortcutsIconHover }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                networkPopup.visible = false
+                                bluetoothPopup.visible = false
+                                notifCenter.visible = false
+                                volumePopup.visible = false
+                                powerButtonPopup.visible = false
+                                shortcutsPopup.visible = !shortcutsPopup.visible
                             }
                         }
                     }
@@ -414,6 +442,7 @@ PanelWindow {
                                 bluetoothPopup.visible = false
                                 notifCenter.visible = false
                                 volumePopup.visible = false
+                                shortcutsPopup.visible = false
                                 powerButtonPopup.visible = !powerButtonPopup.visible
                             }
                         }
@@ -449,7 +478,13 @@ PanelWindow {
         anchor.item: powerIcon
         theme: root.theme
     }
-  
+    
+    ShortcutsPopup {
+        id: shortcutsPopup
+        anchor.item: shortcutsIcon
+        theme: root.theme
+    }
+
     NotificationCenter {
         id: notifCenter
         anchor.item: notifBellIcon
