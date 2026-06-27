@@ -22,6 +22,7 @@ Item {
     property bool isScanning: false
     property bool isWifiActiveRoute: false
     property string currentWifiSsid: ""
+    property int currentWifiSignal: 0
 
     // Layout sizing - adopt the size of the icon text
     implicitWidth: 30
@@ -120,9 +121,10 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.wifiModel.clear();
+                root.currentWifiSignal = 0;
+
                 const lines = this.text.trim().split("\n");
-                
-                let seenSsids = []; // Prevent duplicate SSIDs in the list
+                let networks = {};
                 
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i] === "") continue;
@@ -131,18 +133,41 @@ Item {
                     const parts = lines[i].split(":");
                     if (parts.length >= 4) {
                         const ssid = parts[0];
-                        if (ssid === "" || seenSsids.includes(ssid)) continue;
+                        if (ssid === "") continue;
                         
-                        seenSsids.push(ssid);
-
+                        const signalLevel = parseInt(parts[1]);
                         const inUse = (parts[3] === "*");
-                        root.wifiModel.append({
-                            ssid: ssid,
-                            signal: parseInt(parts[1]),
-                            security: parts[2],
-                            inUse: inUse
-                        });
+
+                        if (inUse) {
+                            root.currentWifiSignal = signalLevel;
+                        }
+                        
+                        // If we haven't seen this SSID yet, save it
+                        if (!networks[ssid]) {
+                            networks[ssid] = {
+                                ssid: ssid,
+                                signal: signalLevel,
+                                security: parts[2],
+                                inUse: inUse
+                            };
+                        } else {
+                            // If we already saw this SSID, update it ONLY IF this specific AP is the active one,
+                            // or if it's not active but has a stronger signal than the one we previously saved.
+                            if (inUse) {
+                                networks[ssid].inUse = true;
+                                networks[ssid].signal = signalLevel;
+                                networks[ssid].security = parts[2];
+                            } else if (!networks[ssid].inUse && signalLevel > networks[ssid].signal) {
+                                networks[ssid].signal = signalLevel;
+                                networks[ssid].security = parts[2];
+                            }
+                        }
                     }
+                }
+
+                // Push the filtered, prioritized networks to the UI model
+                for (let key in networks) {
+                    root.wifiModel.append(networks[key]);
                 }
             }
         }
@@ -173,7 +198,16 @@ Item {
         // Force a rescan when the disconnect finishes
         onRunningChanged: if (!running) forceScan()
     }
+    
+    Process {
+        id: wifiForgetCmd
+        command: ["nmcli", "connection", "delete", root.currentWifiSsid]
+        running: false
 
+        // Force a rescan when the network is forgotten
+        onRunningChanged: if (!running) forceScan()
+    }
+    
     function connectToWifi(ssid, password) {
         wifiConnectCmd.targetSsid = ssid;
         wifiConnectCmd.password = password;
@@ -183,7 +217,11 @@ Item {
     function disconnectWifi() {
         wifiDisconnectCmd.running = true;
     }
-
+    
+    function forgetWifi() {
+        wifiForgetCmd.running = true;
+    }
+    
     function forceScan() {
         if (!wifiScanCmd.running) wifiScanCmd.running = true;
         if (!wifiActiveCmd.running) wifiActiveCmd.running = true;

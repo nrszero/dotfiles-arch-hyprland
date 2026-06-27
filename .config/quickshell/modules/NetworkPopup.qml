@@ -44,6 +44,14 @@ PopupWindow {
             hideTimer.restart()
         }
     }
+    
+    function getWifiIcon(signal) {
+        if (signal > 80) return "󰤨"; // Excellent
+        if (signal > 60) return "󰤥"; // Good
+        if (signal > 40) return "󰤢"; // Fair
+        if (signal > 20) return "󰤟"; // Weak
+        return "󰤯"; // None
+    }
 
     Connections {
         target: popupHover
@@ -163,7 +171,7 @@ PopupWindow {
                     spacing: 8
 
                     Text {
-                        text: "󰤨" 
+                        text: getWifiIcon(networkWidget.currentWifiSignal)
                         color: theme.success
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeMd
@@ -177,7 +185,7 @@ PopupWindow {
                         elide: Text.ElideRight
                         font.bold: true
                     }
-                    
+
                     Text {
                         text: "(Inactive)"
                         color: theme.subText
@@ -187,6 +195,21 @@ PopupWindow {
                     }
 
                     Item { Layout.fillWidth: true }
+                    
+                    // Forget Button
+                    Button {
+                        background: Rectangle {
+                            color: parent.hovered ? theme.urgent : "transparent"
+                            radius: theme.radius
+                        }
+                        contentItem: Text {
+                            text: "Forget"
+                            color: parent.parent.hovered ? theme.background : theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                        }
+                        onClicked: networkWidget.forgetWifi()
+                    }
 
                     // Disconnect Button
                     Button {
@@ -227,7 +250,7 @@ PopupWindow {
                         anchors.rightMargin: 8
 
                         Text {
-                            text: model.inUse ? "󰤨" : "󰤥" // Wi-Fi icons
+                            text: getWifiIcon(model.signal)
                             color: root.selectedSsid === model.ssid ? theme.background : theme.text
                             font.family: theme.fontFace
                             font.pixelSize: theme.fontSizeMd
