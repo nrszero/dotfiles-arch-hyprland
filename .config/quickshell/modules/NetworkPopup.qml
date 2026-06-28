@@ -197,7 +197,7 @@ PopupWindow {
                     // Forget Button
                     Button {
                         background: Rectangle {
-                            color: parent.hovered ? theme.urgent : "transparent"
+                            color: parent.hovered ? theme.accent : theme.surface
                             radius: theme.radius
                         }
                         contentItem: Text {
@@ -212,7 +212,7 @@ PopupWindow {
                     // Disconnect Button
                     Button {
                         background: Rectangle {
-                            color: parent.hovered ? theme.urgent : "transparent"
+                            color: parent.hovered ? theme.accent : theme.surface
                             radius: theme.radius
                         }
                         contentItem: Text {
