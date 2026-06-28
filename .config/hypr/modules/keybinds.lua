@@ -56,12 +56,6 @@ hl.bind(MAIN_MOD .. " + SHIFT + S", hl.dsp.workspace.toggle_special("magic"))
 hl.bind(MAIN_MOD .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Drag window" })
 hl.bind(MAIN_MOD .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize window" })
 
--- Disable DP-1 for Moonlight remote sessions
-hl.bind(MAIN_MOD .. " + U", hl.dsp.exec_cmd("hyprctl keyword monitor DP-1"), { description = "Disable DP-1" })
-
--- Reload Hyprland config to restore dual monitors
-hl.bind(MAIN_MOD .. " + SHIFT + U", hl.dsp.exec_cmd("hyprctl reload"), { description = "Reload Hyprland config" })
-
 -- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, description = "Raise volume" })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, description = "Lower volume" })
