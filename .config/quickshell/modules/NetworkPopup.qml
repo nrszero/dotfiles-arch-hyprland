@@ -136,11 +136,9 @@ PopupWindow {
                     font.bold: true
                 }
 
-                Item { Layout.fillWidth: true } // Pushes the loading icon to the right
-
                 // Show a loading indicator if scanning
                 Text {
-                    text: "󰑐" // Replace with your preferred refresh/spin icon
+                    text: "" // Replace with your preferred refresh/spin icon
                     color: theme.subText
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeMd

@@ -115,16 +115,34 @@ PanelWindow {
 
             // Time Pill
             BarModule {
+                id: timePillBox
                 implicitWidth: timeText.implicitWidth + 20
 
                 Text {
                     id: timeText
                     anchors.centerIn: parent
-                    text: Qt.formatTime(new Date(), "HH:mm")
+                    text: Qt.formatTime(new Date(), "h:mm AP")
                     color: theme.text
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeMd
                     font.bold: true
+                }
+                
+                HoverHandler { id: timeHover }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        networkPopup.visible = false
+                        bluetoothPopup.visible = false
+                        notifCenter.visible = false
+                        volumePopup.visible = false
+                        powerButtonPopup.visible = false
+                        shortcutsPopup.visible = false
+                        // Toggle the calendar
+                        calendarPopup.visible = !calendarPopup.visible
+                    }
                 }
 
                 // Update the clock every second so minutes change on time
@@ -132,7 +150,7 @@ PanelWindow {
                     interval: 1000
                     running: true
                     repeat: true
-                    onTriggered: timeText.text = Qt.formatTime(new Date(), "HH:mm")
+                    onTriggered: timeText.text = Qt.formatTime(new Date(), "h:mm AP")
                 }
             }
 
@@ -303,6 +321,7 @@ PanelWindow {
                                 notifCenter.visible = false
                                 powerButtonPopup.visible = false
                                 shortcutsPopup.visible = false
+                                calendarPopup.visible = false
                                 volumePopup.visible = !volumePopup.visible
                             }
                         }
@@ -327,6 +346,7 @@ PanelWindow {
                                 volumePopup.visible = false
                                 powerButtonPopup.visible = false
                                 shortcutsPopup.visible = false
+                                calendarPopup.visible = false
                                 networkPopup.visible = !networkPopup.visible
                             }
                         }
@@ -351,6 +371,7 @@ PanelWindow {
                                 powerButtonPopup.visible = false
                                 volumePopup.visible = false
                                 shortcutsPopup.visible = false
+                                calendarPopup.visible = false
                                 bluetoothPopup.visible = !bluetoothPopup.visible
                             }
                         }
@@ -396,6 +417,7 @@ PanelWindow {
                                 volumePopup.visible = false
                                 powerButtonPopup.visible = false
                                 shortcutsPopup.visible = false
+                                calendarPopup.visible = false
                                 notifCenter.visible = !notifCenter.visible
                             }
                         }
@@ -420,6 +442,7 @@ PanelWindow {
                                 notifCenter.visible = false
                                 volumePopup.visible = false
                                 powerButtonPopup.visible = false
+                                calendarPopup.visible = false
                                 shortcutsPopup.visible = !shortcutsPopup.visible
                             }
                         }
@@ -443,6 +466,7 @@ PanelWindow {
                                 notifCenter.visible = false
                                 volumePopup.visible = false
                                 shortcutsPopup.visible = false
+                                calendarPopup.visible = false
                                 powerButtonPopup.visible = !powerButtonPopup.visible
                             }
                         }
@@ -484,7 +508,13 @@ PanelWindow {
         anchor.item: shortcutsIcon
         theme: root.theme
     }
-
+    
+    CalendarPopup {
+        id: calendarPopup
+        anchor.item: timePillBox
+        theme: root.theme
+    }
+    
     NotificationCenter {
         id: notifCenter
         anchor.item: notifBellIcon
