@@ -8,6 +8,7 @@ PopupWindow {
     id: root
 
     required property var theme
+    required property var networkWidget
 
     anchor.edges: Edges.Bottom
     anchor.margins.top: 6
@@ -329,12 +330,6 @@ PopupWindow {
                     }
                 }
             }
-        }
-
-        NetworkWidget {
-            id: networkWidget
-            interfaceName: "enp15s0"
-            wifiInterfaceName: "wlp14s0"
         }
     }
 }

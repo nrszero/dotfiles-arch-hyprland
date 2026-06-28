@@ -59,7 +59,13 @@ PanelWindow {
         }
         totalWorkspaces = maxId > 0 ? maxId : 6
     }
-    
+
+    NetworkWidget {
+        id: networkWidget
+        interfaceName: "enp15s0"
+        wifiInterfaceName: "wlp14s0"
+    }
+
     Timer {
         id: reloadTimer
         interval: 250
@@ -333,8 +339,8 @@ PanelWindow {
                         text: "󰈀"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl
-                        color: theme.accent
-
+                        color: networkWidget.connectionState === 1 ? theme.accent : networkWidget.connectionState === 2 ? theme.urgent : theme.text
+                        
                         HoverHandler { id: networkIconHover }
 
                         MouseArea {
@@ -358,10 +364,10 @@ PanelWindow {
                         text: "󰂯"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl
-                        color: Bluetooth.devices.values.some(d => d.connected) ? theme.accent : theme.subText
-                        
-                        HoverHandler { id: bluetoothIconHover }
+                        color: Bluetooth.devices.values.some(d => d.connected) ? theme.accent : theme.text
 
+                        HoverHandler { id: bluetoothIconHover }
+                        
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
@@ -476,13 +482,13 @@ PanelWindow {
         }
 
     }
-
-    // === DROPDOWNS ===
-
+ 
+    // === DROPDOWNS ===    
     NetworkPopup {
         id: networkPopup
         anchor.item: networkIcon
         theme: root.theme
+        networkWidget: networkWidget
     }
 
     BluetoothPopup {
