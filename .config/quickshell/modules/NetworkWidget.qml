@@ -85,22 +85,30 @@ Item {
     // -------------------------------------------------------------------------
     Process {
         id: routeCheckCmd
-        command: ["nmcli", "-t", "-f", "DEVICE,DEFAULT", "dev"]
+        // Using 'ip route' is the standard, most reliable way to check kernel routing
+        command: ["ip", "route", "show", "default"]
         running: false
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const lines = this.text.trim().split("\n");
+                const output = this.text.trim();
                 let isActive = false;
                 
-                for (let i = 0; i < lines.length; i++) {
-                    const parts = lines[i].split(":");
-                    // parts[0] is the interface (wlp14s0), parts[1] is yes/no
-                    if (parts.length >= 2 && parts[0] === root.wifiInterfaceName && parts[1] === "yes") {
+                if (output.length > 0) {
+                    const lines = output.split("\n");
+                    
+                    // The first line is the primary default route (lowest metric)
+                    const primaryRoute = lines[0].trim();
+                    const parts = primaryRoute.split(/\s+/); // Split by spaces
+                    
+                    const devIndex = parts.indexOf("dev");
+                    
+                    // Check if 'dev' exists in the string and the next word is our interface
+                    if (devIndex !== -1 && parts[devIndex + 1] === root.wifiInterfaceName) {
                         isActive = true;
-                        break;
                     }
                 }
+                
                 root.isWifiActiveRoute = isActive;
             }
         }

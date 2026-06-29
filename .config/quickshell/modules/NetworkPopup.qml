@@ -85,7 +85,7 @@ PopupWindow {
             spacing: 8
 
             Text {
-                text: "Ethernet"
+                text: "Networks"
                 color: theme.text
                 font.family: theme.fontFace
                 font.pixelSize: theme.fontSizeMd
@@ -107,54 +107,26 @@ PopupWindow {
                     spacing: 8
 
                     Text {
-                        text: networkWidget.connectionState === 1 ? "󰈀 Connected" :
-                              networkWidget.connectionState === 2 ? "󰈀 Connecting..." : "󰅛 Disconnected"
-                        color: networkWidget.connectionState === 1 ? theme.success :
-                               networkWidget.connectionState === 2 ? theme.accent : theme.urgent
+                        text: "󰈀 Ethernet"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeMd
+                        color: networkWidget.connectionState === 1 ? theme.accent :
+                               networkWidget.connectionState === 2 ? theme.urgent : theme.text
                     }
-                }
-            }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 2
-                color: theme.borderColor
-                opacity: 0.5
-            }
-
-            // Wi-Fi Header & Loading Icon
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 4
-                
-                Text {
-                    text: "Wi-Fi"
-                    color: theme.text
-                    font.family: theme.fontFace
-                    font.pixelSize: theme.fontSizeMd
-                    font.bold: true
-                }
-
-                // Show a loading indicator if scanning
-                Text {
-                    text: "" // Replace with your preferred refresh/spin icon
-                    color: theme.subText
-                    font.family: theme.fontFace
-                    font.pixelSize: theme.fontSizeMd
-                    visible: networkWidget.isScanning
-                    
-                    RotationAnimation on rotation {
-                        loops: Animation.Infinite
-                        from: 0
-                        to: 360
-                        duration: 1000
-                        running: networkWidget.isScanning
+                    Text {
+                        text: networkWidget.connectionState === 1 ? "(Connected)" :
+                              networkWidget.connectionState === 2 ? "(Connecting...)" : "(Disconnected)"
+                        color: theme.subText
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
                     }
+
+                    Item { Layout.fillWidth: true }
+
                 }
             }
-
+   
             // Active Wi-Fi Connection
             Rectangle {
                 Layout.fillWidth: true
@@ -186,11 +158,10 @@ PopupWindow {
                     }
 
                     Text {
-                        text: "(Inactive)"
+                        text: networkWidget.isWifiActiveRoute ? "(Connected)" : "(Inactive)"
                         color: theme.subText
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeSm
-                        visible: !networkWidget.isWifiActiveRoute // Only show if not the default route
                     }
 
                     Item { Layout.fillWidth: true }
@@ -223,6 +194,39 @@ PopupWindow {
                             font.pixelSize: theme.fontSizeSm
                         }
                         onClicked: networkWidget.disconnectWifi()
+                    }
+                }
+            }
+            
+            // Wi-Fi Header & Loading Icon
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                
+                Text {
+                    text: "Available Networks"
+                    color: theme.text
+                    font.family: theme.fontFace
+                    font.pixelSize: theme.fontSizeMd
+                    font.bold: true
+                }
+                
+                Item { Layout.fillWidth: true }
+
+                // Show a loading indicator if scanning
+                Text {
+                    text: "" // Replace with your preferred refresh/spin icon
+                    color: theme.subText
+                    font.family: theme.fontFace
+                    font.pixelSize: theme.fontSizeMd
+                    visible: networkWidget.isScanning
+                    
+                    RotationAnimation on rotation {
+                        loops: Animation.Infinite
+                        from: 0
+                        to: 360
+                        duration: 1000
+                        running: networkWidget.isScanning
                     }
                 }
             }

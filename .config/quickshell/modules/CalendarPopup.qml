@@ -158,7 +158,7 @@ PopupWindow {
 
             Rectangle {
                 Layout.fillWidth: true
-                height: 1
+                height: 2
                 color: theme.borderColor
                 opacity: 0.5
             }
@@ -244,7 +244,7 @@ PopupWindow {
                             anchors.centerIn: parent
                             text: dayNumber
                             // Inverse text color if today is highlighted. Dim if previous/next month.
-                            color: isToday ? theme.background : (isCurrentMonth ? theme.text : theme.subText)
+                            color: isToday ? theme.text : (isCurrentMonth ? theme.text : theme.subText)
                             font.family: theme.fontFace
                             font.pixelSize: theme.fontSizeSm
                             font.bold: isToday

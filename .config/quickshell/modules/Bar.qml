@@ -59,11 +59,23 @@ PanelWindow {
         }
         totalWorkspaces = maxId > 0 ? maxId : 6
     }
+    
+    Process {
+        id: ethDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
+        running: true
+    }
+
+    Process {
+        id: wifiDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
+        running: true
+    }
 
     NetworkWidget {
         id: networkWidget
-        interfaceName: "enp15s0"
-        wifiInterfaceName: "wlp14s0"
+        interfaceName: ethDetector.stdout ? ethDetector.stdout.trim() : "enp15s0"
+        wifiInterfaceName: wifiDetector.stdout ? wifiDetector.stdout.trim() : "wlp14s0"
     }
 
     Timer {
@@ -336,10 +348,12 @@ PanelWindow {
                     // Network
                     Text {
                         id: networkIcon
-                        text: "󰈀"
+                        text: networkWidget.isWifiActiveRoute ? "󰤥" : "󰈀"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl
-                        color: networkWidget.connectionState === 1 ? theme.accent : networkWidget.connectionState === 2 ? theme.urgent : theme.text
+                        color: networkWidget.connectionState === 1 ? theme.accent :
+                               networkWidget.connectionState === 2 ? theme.urgent :
+                               networkWidget.currentWifiSsid !== "" ? theme.accent : theme.text 
                         
                         HoverHandler { id: networkIconHover }
 
