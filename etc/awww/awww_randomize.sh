@@ -108,21 +108,7 @@ while true; do
 			echo "$SLEEP_PID" > "$PID_FILE"
 			wait $SLEEP_PID
 		else
-            # Uses imagemagick to create blurred background
-			convert "$img" \
-                -resize 2560x1440^ \
-                -gravity center \
-                -extent 2560x1440 \
-                -blur "$BLUR_RADIUS" \
-                -quality 85 \
-                "$LOCK_WALL_TMP"
-
-            chmod 644 "$LOCK_WALL_TMP"
-            mv "$LOCK_WALL_TMP" "/var/tmp/greeter-wallpaper"
-
-            echo "[$(date '+%H:%M:%S')] Created blurred lockscreen wallpaper (blur=$BLUR_RADIUS)" >> "$LOG_FILE"
-
-			# 1. Set the wallpaper and extract colors
+			# Set the wallpaper and extract colors
 			awww img --resize="$RESIZE_TYPE" "$img" </dev/null
 			wal -i "$img" -n -q -s
 			if [ -f "$HOME/.cache/wal/colors.sh" ]; then
@@ -131,7 +117,7 @@ while true; do
 			    echo "[$(date '+%H:%M:%S')] ERROR: Pywal colors.sh not found!" >> "$LOG_FILE"
 			fi
 			
-			# 2. Generate Hyprland colors
+			# Generate Hyprland colors
 			cat << EOF > "$HOME/.cache/wal/colors.lua"
 return {
     color0 = "${color0}",
@@ -139,7 +125,7 @@ return {
     color12 = "${color12}"
 }
 EOF
-			# 3. Generate Rofi colors
+			# Generate Rofi colors
 			cat << EOF > "$HOME/.cache/wal/colors-rounded-glass.rasi"
 * {
     bg0:    ${color0}33;
@@ -153,27 +139,36 @@ EOF
     fg3:    ${color15}cc;
 }
 EOF
-			# 4. Atomic JSON Backup
+			# Atomic JSON Backup
 			cp "$HOME/.cache/wal/colors.json" "/var/tmp/greeter-colors.tmp"
 			chmod 644 "/var/tmp/greeter-colors.tmp"
 			mv "/var/tmp/greeter-colors.tmp" "/var/tmp/greeter-colors.json"
 
 			echo "[$(date '+%H:%M:%S')] DEBUG: Reloading Hyprland..." >> "$LOG_FILE"
 			hyprctl reload >> "$LOG_FILE" 2>&1
-		
-			# 5. Sleep cycle
+	        
+            # Uses imagemagick to create blurred background
+			convert "$img" \
+                -resize 2560x1440^ \
+                -gravity center \
+                -extent 2560x1440 \
+                -blur "$BLUR_RADIUS" \
+                -quality 85 \
+                "$LOCK_WALL_TMP"
+
+            chmod 644 "$LOCK_WALL_TMP"
+            mv "$LOCK_WALL_TMP" "/var/tmp/greeter-wallpaper"
+            echo "[$(date '+%H:%M:%S')] Created blurred lockscreen wallpaper (blur=$BLUR_RADIUS)" >> "$LOG_FILE"
+
+			#  Sleep cycle
 			SLEEP_TIME="${2:-$DEFAULT_INTERVAL}"
 			echo "[$(date '+%H:%M:%S')] Set wallpaper: $(basename "$img")" >> "$LOG_FILE"
-			
 			sleep "$SLEEP_TIME" </dev/null &
 			SLEEP_PID=$!
-			
 			echo "$SLEEP_PID" > "$PID_FILE"
 			echo "[$(date '+%H:%M:%S')] Started sleep (PID: $SLEEP_PID) for $SLEEP_TIME seconds." >> "$LOG_FILE"
-			
 			wait $SLEEP_PID
 			WAIT_STATUS=$?
-			
 			if [ $WAIT_STATUS -gt 128 ]; then
 				echo "[$(date '+%H:%M:%S')] -> INTERRUPTED: Sleep killed (Next wallpaper triggered)." >> "$LOG_FILE"
 			else
