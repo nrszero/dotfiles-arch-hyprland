@@ -21,7 +21,7 @@ PanelWindow {
     required property bool barVisible
 
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.exclusiveZone: barVisible ? implicitHeight : 0
+    WlrLayershell.exclusiveZone: (barVisible && !hasFullscreen) ? implicitHeight : 0
     exclusionMode: ExclusionMode.Normal
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -46,6 +46,7 @@ PanelWindow {
     Component.onCompleted: {
         Hyprland.refreshWorkspaces()
         updateTotalWorkspaces()
+        fsCheckTimer.restart()
     }
 
     function updateTotalWorkspaces() {
@@ -60,6 +61,16 @@ PanelWindow {
         totalWorkspaces = maxId > 0 ? maxId : 6
     }
     
+    function checkFullscreen() {
+        if (!hMonitor || !hMonitor.activeWorkspace) {
+            hasFullscreen = false;
+            return;
+        }
+        
+        // Quickshell natively tracks this! No looping required.
+        hasFullscreen = hMonitor.activeWorkspace.hasFullscreen;
+    }
+
     Process {
         id: ethDetector
         command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
@@ -87,6 +98,13 @@ PanelWindow {
             updateTotalWorkspaces()
         }
     }
+    
+    Timer {
+        id: fsCheckTimer
+        interval: 50
+        repeat: false
+        onTriggered: checkFullscreen()
+    }
 
     Connections {
         target: Hyprland
@@ -95,18 +113,26 @@ PanelWindow {
                 event.name === "destroyworkspace" || event.name === "focusedmon") {
                 Hyprland.refreshWorkspaces()
                 updateTotalWorkspaces()
+                fsCheckTimer.restart()
             } else if (event.name === "configreloaded") {
                 reloadTimer.restart()
+            } else if (event.name === "fullscreen") {
+                // Whenever a window changes state, moves, or closes, update the variable
+                fsCheckTimer.restart() 
             }
         }
     }
     
     property int monitorIndex: hMonitor ? hMonitor.id : 0
     property int baseWs: monitorIndex
+    property bool hasFullscreen: false
+    onHasFullscreenChanged: {
+        console.log(`[Bar Debug] Monitor ${monitorIndex} (${hMonitor ? hMonitor.name : "unknown"}) hasFullscreen changed to: ${hasFullscreen}`);
+    }
 
     anchors {top: true; left: true; right: true; }
     implicitHeight: 50
-    visible: barVisible
+    visible: barVisible && !hasFullscreen
     color: "transparent"
      
     component BarModule: Rectangle {
