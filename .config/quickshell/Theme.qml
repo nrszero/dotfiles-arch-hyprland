@@ -28,6 +28,7 @@ Item {
     property int fontSizeMd: 16
     property int fontSizeLg: 18
     property int fontSizeXl: 24
+    property int fontSizeXXl: 30
 
     // --- DYNAMIC THEMING ---
     FileView {

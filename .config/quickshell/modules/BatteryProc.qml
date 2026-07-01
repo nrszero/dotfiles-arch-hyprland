@@ -31,9 +31,9 @@ Item {
         }
     }
 
-    // Poll every 5 seconds
+    // Poll every 30 seconds
     Timer {
-        interval: 5000
+        interval: 30000
         running: true
         repeat: true
         onTriggered: battProc.running = true

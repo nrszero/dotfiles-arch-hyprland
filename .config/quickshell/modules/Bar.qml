@@ -300,33 +300,94 @@ PanelWindow {
                     // Battery
                     RowLayout {
                         visible: battery.battPresent
-                        spacing: 3
-                        Text {
-                            text: {
-                                if (battery.battCharging) return "󰂄";
-                                if (battery.battLevel > 0.9) return "󰁹";
-                                if (battery.battLevel > 0.8) return "󰂂";
-                                if (battery.battLevel > 0.7) return "󰂁";
-                                if (battery.battLevel > 0.6) return "󰂀";
-                                if (battery.battLevel > 0.5) return "󰁿";
-                                if (battery.battLevel > 0.4) return "󰁾";
-                                if (battery.battLevel > 0.3) return "󰁽";
-                                if (battery.battLevel > 0.2) return "󰁼";
-                                return "󰁺";
+                        spacing: 1 // Tight spacing between the battery body and the tip
+                        
+                        // Main Battery Body
+                        Rectangle {
+                            id: batteryProgress
+                            Layout.preferredWidth: 30
+                            Layout.preferredHeight: 16
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: 4.5
+                            
+                            // Track Color (The empty part of the battery)
+                            color: theme.surface
+
+                            // The Solid Fill Level
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                width: parent.width * battery.battLevel
+                                radius: 4.5
+                                color: theme.text;
                             }
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeLg
-                            color: theme.text
+                            
+                            // The Inner Text & Icon
+                            RowLayout {
+                                anchors.centerIn: parent
+                                spacing: 0
+
+                                // Low Battery
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.rightMargin: 1
+                                    text: "!"
+                                    font.family: theme.fontFace
+                                    font.pixelSize: 12
+                                    visible: {
+                                        if (battery.battLevel <= 0.2 && !battery.battCharging) {
+                                            return true
+                                        }
+                                        return false
+                                    } 
+
+                                    // Cuts out of the solid fill
+                                    color: theme.accent 
+                                }
+
+                                // Charging Bolt Icon
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.rightMargin: 1
+                                    text: "󱐋"
+                                    font.family: theme.fontFace
+                                    font.pixelSize: 12
+                                    visible: battery.battCharging
+                                    // Cuts out of the solid fill
+                                    color: theme.accent 
+                                }
+                                
+                                // Percentage Text
+                                Text {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    font.family: theme.fontFace
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    text: Math.round(battery.battLevel * 100)
+                                    color: theme.accent
+                                }
+                            }
                         }
-                        Text {
-                            text: Math.round(battery.battLevel * 100) + "%"
-                            color: theme.subText
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
-                            font.bold: true
+
+                        // Battery Tip (The positive terminal nub)
+                        Rectangle {
+                            Layout.preferredWidth: 2
+                            Layout.preferredHeight: 6
+                            Layout.alignment: Qt.AlignVCenter
+                            radius: 1
+                            
+                            // If full, color it with the fill. Otherwise, use the track color.
+                            color: {
+                                if (battery.battLevel >= 0.98) {
+                                    return theme.text;
+                                }
+
+                                return theme.surface;
+                            }
                         }
                     }
-                    
+
                     // Volume Icon
                     Text {
                         id: volumeIcon
