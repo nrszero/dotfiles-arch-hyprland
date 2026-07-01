@@ -14,11 +14,26 @@ import Quickshell.Services.SystemTray
 PanelWindow {
     id: root
     screen: screenModel
+    
     required property var screenModel
     required property var theme
     required property var notifModel
     required property var dismissNotification   // function(index) from shell
     required property bool barVisible
+    
+    property int totalWorkspaces: 6
+    property var hMonitor: {
+        if (!Hyprland.monitors || !Hyprland.monitors.values || !root.screenModel) return null;
+        for (let m of Hyprland.monitors.values) {
+            if (m.name === root.screenModel.name) {
+                return m;
+            }    
+        }
+        return null;
+    }
+    property int monitorIndex: hMonitor ? hMonitor.id : 0
+    property int baseWs: monitorIndex
+    property bool hasFullscreen: false
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusiveZone: (barVisible && !hasFullscreen) ? implicitHeight : 0
@@ -30,18 +45,6 @@ PanelWindow {
             Region { item: mainLayout }
         ]
     }
-
-    property var hMonitor: {
-        if (!Hyprland.monitors || !Hyprland.monitors.values || !root.screenModel) return null;
-        for (let m of Hyprland.monitors.values) {
-            if (m.name === root.screenModel.name) {
-                return m;
-            }    
-        }
-        return null;
-    }
-    
-    property int totalWorkspaces: 6
 
     Component.onCompleted: {
         Hyprland.refreshWorkspaces()
@@ -70,23 +73,17 @@ PanelWindow {
         // Quickshell natively tracks this! No looping required.
         hasFullscreen = hMonitor.activeWorkspace.hasFullscreen;
     }
-
-    Process {
-        id: ethDetector
-        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
-        running: true
-    }
-
-    Process {
-        id: wifiDetector
-        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
-        running: true
-    }
-
-    NetworkWidget {
-        id: networkWidget
-        interfaceName: ethDetector.stdout ? ethDetector.stdout.trim() : "enp15s0"
-        wifiInterfaceName: wifiDetector.stdout ? wifiDetector.stdout.trim() : "wlp14s0"
+    
+    function togglePopup(target) {
+        let popups = [
+            networkPopup, bluetoothPopup, volumePopup, 
+            powerButtonPopup, shortcutsPopup, calendarPopup, notifCenter
+        ]
+        
+        for (let p of popups) {
+            if (p !== target) p.visible = false
+        }
+        target.visible = !target.visible
     }
 
     Timer {
@@ -121,13 +118,6 @@ PanelWindow {
                 fsCheckTimer.restart() 
             }
         }
-    }
-    
-    property int monitorIndex: hMonitor ? hMonitor.id : 0
-    property int baseWs: monitorIndex
-    property bool hasFullscreen: false
-    onHasFullscreenChanged: {
-        console.log(`[Bar Debug] Monitor ${monitorIndex} (${hMonitor ? hMonitor.name : "unknown"}) hasFullscreen changed to: ${hasFullscreen}`);
     }
 
     anchors {top: true; left: true; right: true; }
@@ -177,16 +167,7 @@ PanelWindow {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        networkPopup.visible = false
-                        bluetoothPopup.visible = false
-                        notifCenter.visible = false
-                        volumePopup.visible = false
-                        powerButtonPopup.visible = false
-                        shortcutsPopup.visible = false
-                        // Toggle the calendar
-                        calendarPopup.visible = !calendarPopup.visible
-                    }
+                    onClicked: root.togglePopup(calendarPopup)
                 }
 
                 // Update the clock every second so minutes change on time
@@ -359,15 +340,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                networkPopup.visible = false
-                                bluetoothPopup.visible = false
-                                notifCenter.visible = false
-                                powerButtonPopup.visible = false
-                                shortcutsPopup.visible = false
-                                calendarPopup.visible = false
-                                volumePopup.visible = !volumePopup.visible
-                            }
+                            onClicked: root.togglePopup(volumePopup)
                         }
                     }
 
@@ -386,15 +359,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                bluetoothPopup.visible = false
-                                notifCenter.visible = false
-                                volumePopup.visible = false
-                                powerButtonPopup.visible = false
-                                shortcutsPopup.visible = false
-                                calendarPopup.visible = false
-                                networkPopup.visible = !networkPopup.visible
-                            }
+                            onClicked: root.togglePopup(networkPopup)
                         }
                     }
 
@@ -411,15 +376,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                networkPopup.visible = false
-                                notifCenter.visible = false
-                                powerButtonPopup.visible = false
-                                volumePopup.visible = false
-                                shortcutsPopup.visible = false
-                                calendarPopup.visible = false
-                                bluetoothPopup.visible = !bluetoothPopup.visible
-                            }
+                            onClicked: root.togglePopup(bluetoothPopup)
                         }
                     }
 
@@ -457,15 +414,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                networkPopup.visible = false
-                                bluetoothPopup.visible = false
-                                volumePopup.visible = false
-                                powerButtonPopup.visible = false
-                                shortcutsPopup.visible = false
-                                calendarPopup.visible = false
-                                notifCenter.visible = !notifCenter.visible
-                            }
+                            onClicked: root.togglePopup(notifCenter)
                         }
                     }
                     
@@ -482,15 +431,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                networkPopup.visible = false
-                                bluetoothPopup.visible = false
-                                notifCenter.visible = false
-                                volumePopup.visible = false
-                                powerButtonPopup.visible = false
-                                calendarPopup.visible = false
-                                shortcutsPopup.visible = !shortcutsPopup.visible
-                            }
+                            onClicked: root.togglePopup(shortcutsPopup)
                         }
                     }
 
@@ -506,15 +447,7 @@ PanelWindow {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                networkPopup.visible = false
-                                bluetoothPopup.visible = false
-                                notifCenter.visible = false
-                                volumePopup.visible = false
-                                shortcutsPopup.visible = false
-                                calendarPopup.visible = false
-                                powerButtonPopup.visible = !powerButtonPopup.visible
-                            }
+                            onClicked: root.togglePopup(powerButtonPopup)
                         }
                     }
                 }
@@ -523,7 +456,7 @@ PanelWindow {
 
     }
  
-    // === DROPDOWNS ===    
+    // === POPUPS ===    
     NetworkPopup {
         id: networkPopup
         anchor.item: networkIcon
@@ -567,5 +500,24 @@ PanelWindow {
         notifModel: root.notifModel
         theme: root.theme
         dismissNotification: root.dismissNotification
+    }
+
+    // === PROCESS'S ===
+    Process {
+        id: ethDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
+        running: true
+    }
+
+    Process {
+        id: wifiDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
+        running: true
+    }
+
+    NetworkWidget {
+        id: networkWidget
+        interfaceName: ethDetector.stdout ? ethDetector.stdout.trim() : "enp15s0"
+        wifiInterfaceName: wifiDetector.stdout ? wifiDetector.stdout.trim() : "wlp14s0"
     }
 }

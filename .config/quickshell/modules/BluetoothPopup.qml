@@ -29,7 +29,6 @@ PopupWindow {
 
     function updateHover() {
         if (!popupHover) return;
-
         if (popupHover.hovered) {
             hideTimer.stop()
         } else {
@@ -39,9 +38,7 @@ PopupWindow {
 
     Connections {
         target: popupHover
-        function onHoveredChanged() {
-            updateHover()
-        }
+        function onHoveredChanged() { updateHover() }
     }
 
     onVisibleChanged: {
