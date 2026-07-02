@@ -74,7 +74,7 @@ Item {
 
                 // Map Pywal colors to the greeter theme properties
                 theme.text   = pywal.special.foreground
-                theme.accent = pywal.colors.color4
+                theme.accent = pywal.colors.color3
                 theme.error  = pywal.colors.color1
                 theme.borderColor = pywal.colors.color10
                 theme.surface = parseHex(pywal.colors.color0, 0.80) 

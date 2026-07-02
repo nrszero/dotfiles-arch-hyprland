@@ -48,7 +48,7 @@ Item {
                 // Map Pywal colors to your theme properties
                 theme.text    = pywal.special.foreground
                 theme.subText = pywal.colors.color7
-                theme.accent  = pywal.colors.color4
+                theme.accent  = pywal.colors.color3
                 theme.urgent  = pywal.colors.color1
                 theme.success = pywal.colors.color2
                 theme.borderColor = pywal.colors.color10

@@ -17,7 +17,7 @@ if home then
 
         -- Ensure the table actually contains data before applying
         if pywal and pywal.color10 then
-            active_colors = {"rgb(" .. pywal.color10:sub(2) .. ")", "rgb(" .. pywal.color12:sub(2) .. ")"}
+            active_colors = {"rgb(" .. pywal.color10:sub(2) .. ")", "rgb(" .. pywal.color10:sub(2) .. ")"}
             inactive_colors = {"rgba(" .. pywal.color0:sub(2) .. "aa)"}
         end
     else

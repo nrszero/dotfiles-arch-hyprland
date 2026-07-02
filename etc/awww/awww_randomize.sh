@@ -121,6 +121,8 @@ while true; do
 			cat << EOF > "$HOME/.cache/wal/colors.lua"
 return {
     color0 = "${color0}",
+    color8 = "${color8}",
+    color9 = "${color9}",
     color10 = "${color10}",
     color12 = "${color12}"
 }
