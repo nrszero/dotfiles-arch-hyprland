@@ -105,15 +105,85 @@ PopupWindow {
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
-                        
-                        // Battery Level (only show if available)
-                        Text {
+
+                        // Battery
+                        RowLayout {
                             visible: modelData.battery >= 0
-                            text: Math.round(modelData.battery * 100) + "%"
-                            color: modelData.battery < 0.2 ? theme.urgent : theme.success
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
-                        }
+                            spacing: 1 // Tight spacing between the battery body and the tip
+                            
+                            // Main Battery Body
+                            Rectangle {
+                                id: batteryProgress
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 16
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 4.5
+                                
+                                // Track Color (The empty part of the battery)
+                                color: theme.surface
+
+                                // The Solid Fill Level
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width * modelData.battery
+                                    radius: 4.5
+                                    color: theme.text;
+                                }
+                                
+                                // The Inner Text & Icon
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 0
+
+                                    // Low Battery
+                                    Text {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        Layout.rightMargin: 1
+                                        text: "!"
+                                        font.family: theme.fontFace
+                                        font.pixelSize: 12
+                                        visible: {
+                                            if (modelData.battery <= 0.2) {
+                                                return true
+                                            }
+                                            return false
+                                        } 
+
+                                        // Cuts out of the solid fill
+                                        color: theme.accent 
+                                    }
+
+                                    // Percentage Text
+                                    Text {
+                                        Layout.alignment: Qt.AlignVCenter
+                                        font.family: theme.fontFace
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                        text: Math.round(modelData.battery * 100)
+                                        color: theme.accent
+                                    }
+                                }
+                            }
+
+                            // Battery Tip (The positive terminal nub)
+                            Rectangle {
+                                Layout.preferredWidth: 2
+                                Layout.preferredHeight: 6
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 1
+                                
+                                // If full, color it with the fill. Otherwise, use the track color.
+                                color: {
+                                    if (modelData.battery >= 0.98) {
+                                        return theme.text;
+                                    }
+
+                                    return theme.surface;
+                                }
+                            }
+                        } 
 
                         // Connect / Disconnect Button
                         Button {
