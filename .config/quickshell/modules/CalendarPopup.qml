@@ -158,7 +158,7 @@ PopupWindow {
 
             Rectangle {
                 Layout.fillWidth: true
-                height: 2
+                height: 1
                 color: theme.borderColor
                 opacity: 0.5
             }

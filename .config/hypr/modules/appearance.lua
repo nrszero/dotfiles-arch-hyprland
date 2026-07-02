@@ -17,7 +17,7 @@ if home then
 
         -- Ensure the table actually contains data before applying
         if pywal and pywal.color10 then
-            active_colors = {"rgb(" .. pywal.color10:sub(2) .. ")", "rgb(" .. pywal.color10:sub(2) .. ")"}
+            active_colors = {"rgb(" .. pywal.color8:sub(2) .. ")"}
             inactive_colors = {"rgba(" .. pywal.color0:sub(2) .. "aa)"}
         end
     else
@@ -31,9 +31,9 @@ hl.config({
     general = {
         gaps_in = 5,
         gaps_out = 10,
-        border_size = 2,
+        border_size = 1,
         col = {
-            active_border = { colors = active_colors, angle = 45 },
+            active_border = { colors = active_colors },
             inactive_border = { colors = inactive_colors },
         },
         -- Set to true enable resizing windows by clicking and dragging on borders and gaps

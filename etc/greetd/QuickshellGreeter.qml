@@ -20,7 +20,7 @@ ShellRoot {
 
         property int fontSize: 16
         property int radius: 15
-        property int borderWidth: 2
+        property int borderWidth: 0
     }
 
     FileView {
@@ -151,7 +151,7 @@ ShellRoot {
                 // Wallpaper
                 Item {
                     anchors.fill: parent
-                    clip: true                    // This usually kills the white border
+                    clip: true
 
                     Image {
                         id: wallpaper
@@ -277,7 +277,7 @@ ShellRoot {
                                 color: Qt.darker(theme.surface, 1.2)
                                 radius: theme.radius
                                 border.color: inputField.activeFocus ? theme.accent : "transparent"
-                                border.width: 2
+                                border.width: 1
 
                                 TextInput {
                                     id: inputField
@@ -313,7 +313,7 @@ ShellRoot {
                                 background: Rectangle {
                                     color: parent.hovered || parent.down ? theme.accent : theme.surface
                                     radius: theme.radius
-                                    border.width: 2
+                                    border.width: theme.borderWidth
                                     border.color: theme.borderColor
                                 }
 
