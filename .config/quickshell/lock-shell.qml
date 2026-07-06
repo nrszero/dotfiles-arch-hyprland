@@ -3,14 +3,16 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.Pam
 import Quickshell.Io
-
-import "." as Lock
+import "./modules"
+import "./"
 
 ShellRoot {
     id: root
 
     Scope {
         id: lockContext
+        
+        Theme { id: appTheme }
 
         property string currentText: ""
         property bool unlockInProgress: false
@@ -107,9 +109,10 @@ ShellRoot {
 
             Component {
                 id: lockUIComponent
-                Lock.LockScreen {
+                LockScreen {
                     context: lockContext
                     targetScreen: lockSurface.screen
+                    theme: appTheme
                 }
             }
 

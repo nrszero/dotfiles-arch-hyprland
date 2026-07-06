@@ -23,7 +23,7 @@ else
     log "Using config dir: $CONFIG_DIR"
 fi
 
-LOCK_QML="$CONFIG_DIR/lock/shell.qml"
+LOCK_QML="$CONFIG_DIR/lock-shell.qml"
 log "Lock QML file: $LOCK_QML"
 
 if [ ! -f "$LOCK_QML" ]; then
@@ -31,7 +31,7 @@ if [ ! -f "$LOCK_QML" ]; then
     exit 1
 fi
 log "Checking for existing lock screen instances..."
-if pgrep -f "quickshell.*lock/shell.qml" > /dev/null; then
+if pgrep -f "quickshell.*lock-shell.qml" > /dev/null; then
     log "Lock screen is already running. Ignoring duplicate request."
     exit 0
 fi
@@ -44,14 +44,14 @@ cd "$CONFIG_DIR" || {
 
 log "Current working directory: $(pwd)"
 log "Launching quickshell..."
-log "Command: quickshell -p lock/shell.qml"
+log "Command: quickshell -p lock-shell.qml"
 
 export QSG_RHI_BACKEND=vulkan # Prevent quickshell crash after sleep
 export QSG_RENDER_LOOP=basic # Prevent DPMS deadlock
 
 # Run quickshell and capture everything
-quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1
-# WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p lock/shell.qml > "$LOG_FILE" 2>&1
+quickshell -p lock-shell.qml > "$LOG_FILE" 2>&1
+# WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p lock-shell.qml > "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 log "Quickshell exited with code: $EXIT_CODE"

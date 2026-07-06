@@ -310,7 +310,7 @@ PopupWindow {
                     background: Rectangle {
                         color: "transparent"
                         border.color: theme.borderColor
-                        radius: 4
+                        radius: theme.radius
                     }
                     
                     onAccepted: {

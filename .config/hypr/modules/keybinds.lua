@@ -10,7 +10,7 @@ hl.bind(MAIN_MOD .. " + G", hl.dsp.exec_cmd("lutris"), { description = "Open Lut
 hl.bind(MAIN_MOD .. " + N", hl.dsp.exec_cmd("kill $(cat $XDG_RUNTIME_DIR/awww_sleep.pid) 2>/dev/null"), { description = "Next wallpaper" })
 hl.bind(MAIN_MOD .. " + SHIFT + N", hl.dsp.exec_cmd("~/.config/hypr/scripts/cycle_wallpaper_folder.sh"), { description = "Next wallpaper folder" })
 hl.bind(MAIN_MOD .. " + Tab", hl.dsp.global("quickshell:toggleBar"), { description = "Toggle autohide status bar" })
-hl.bind(MAIN_MOD .. " + M", hl.dsp.exec_cmd("~/.config/quickshell/lock/lock.sh"), { description = "Lock screen" })
+hl.bind(MAIN_MOD .. " + M", hl.dsp.exec_cmd("~/.config/quickshell/lock.sh"), { description = "Lock screen" })
 hl.bind(MAIN_MOD .. " + SHIFT + M", hl.dsp.exit(), { description = "Exit Hyprland" })
 
 -- Layout
