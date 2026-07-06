@@ -6,56 +6,13 @@ import Quickshell.Services.Greetd
 import Quickshell.Wayland
 import Quickshell.Io
 import QtQml
+import "./modules"
 
 ShellRoot {
     id: root
-
-    QtObject {
-        id: theme
-        property color surface: "#33000000"
-        property color text: "#ccd8dee9"
-        property color accent: "#cc5e81ac"
-        property color error: "#bf616a"
-        property color borderColor: "#3388c0d0"
-
-        property int fontSize: 16
-        property int radius: 15
-        property int borderWidth: 0
-    }
-
-    FileView {
-        id: greeterColors
-        
-        // Point directly to the globally readable mirror
-        path: "/var/tmp/greeter-colors.json"
-        
-        watchChanges: false 
-        onFileChanged: reload() 
-
-        onLoaded: {
-            try {
-                let pywal = JSON.parse(text())
-                
-                let parseHex = function(hexStr, alpha) {
-                    let r = parseInt(hexStr.slice(1, 3), 16) / 255.0
-                    let g = parseInt(hexStr.slice(3, 5), 16) / 255.0
-                    let b = parseInt(hexStr.slice(5, 7), 16) / 255.0
-                    return Qt.rgba(r, g, b, alpha)
-                }
-
-                // Map Pywal colors to the greeter theme properties
-                theme.text   = pywal.special.foreground
-                theme.accent = pywal.colors.color3
-                theme.error  = pywal.colors.color1
-                theme.borderColor = pywal.colors.color10
-                theme.surface = parseHex(pywal.colors.color0, 0.80) 
-                
-            } catch(e) {
-                console.log("[Greeter Theme] Failed to parse Pywal colors.json", e)
-            }
-        }
-    }
-
+    
+    property Theme appTheme: Theme { id: theme }
+ 
     // ---------------------------------------------------------
     // UI LAYOUT
     // ---------------------------------------------------------
@@ -91,15 +48,28 @@ ShellRoot {
                     Greetd.respond(txt);
                 }
             }
+            
+            function togglePopup(target) {
+                let popups = [
+                    lockPowerButtonPopup
+                ]
+                
+                for (let p of popups) {
+                    if (p !== target) p.visible = false
+                }
+                target.visible = !target.visible
+            }
 
             // Greetd is a singleton, so we use Connections to listen to it
             Connections {
+                id: context
                 target: Greetd
+                
+                property bool showFailure: false
 
                 function onAuthMessage(message, isError, responseRequired, echo) {
-                    statusText.text = message
-                    statusText.color = isError ? theme.error : theme.text
-
+                    context.showFailure = false
+                    
                     if (responseRequired) {
                         inputField.text = ""
                         inputField.echoMode = echo ? TextInput.Normal : TextInput.Password
@@ -110,8 +80,8 @@ ShellRoot {
                 }
 
                 function onAuthFailure(message) {
-                    statusText.text = "Login Failed: " + message
-                    statusText.color = theme.error
+                    context.showFailure = true
+
                     loginState.state = "username"
                     inputField.text = ""
                     inputField.echoMode = TextInput.Normal
@@ -120,15 +90,14 @@ ShellRoot {
                 }
 
                 function onReadyToLaunch() {
-                    statusText.text = "Success. Launching..."
-                    statusText.color = theme.accent
+                    context.showFailure = false
+
                     // Call the singleton directly
                     Greetd.launch(sessionCommand)
                 }
 
                 function onError(error) {
-                    statusText.text = "Error: " + error
-                    statusText.color = theme.error
+                    context.showFailure = true
                 }
             }
 
@@ -141,37 +110,49 @@ ShellRoot {
                     State { name: "password" }
                 ]
             }
+            
+            component BarModule: Rectangle {
+                color: theme.background
+                radius: theme.radius
+                border.width: theme.borderWidth
+                border.color: theme.borderColor
+                height: 36
+                Layout.alignment: Qt.AlignVCenter
+            }
 
-            // Master
+            BatteryProc { id: battery }
+
+            // Wallpaper
             Item {
-                id: content
                 anchors.fill: parent
-                visible: isMain
+                clip: true
 
-                // Wallpaper
-                Item {
+                Image {
+                    id: wallpaper
                     anchors.fill: parent
-                    clip: true
+                    source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
+                    fillMode: Image.PreserveAspectCrop
 
-                    Image {
-                        id: wallpaper
-                        anchors.fill: parent
-                        source: "file:///var/tmp/greeter-wallpaper"
-                        fillMode: Image.PreserveAspectCrop
-
-                        // Disable async loading to prevent cross-thread Wayland surface crashes
-                        asynchronous: true
-                        cache: false
-                        smooth: true
-                    }
+                    // Disable async loading to prevent cross-thread Wayland surface crashes
+                    asynchronous: true
+                    cache: false
+                    smooth: true
                 }
 
                 // Light dark overlay (keep this)
                 Rectangle {
                     anchors.fill: parent
                     color: "#000000"
-                    opacity: 0.6
+                    opacity: 0.5
                 }
+            }
+
+            // Master
+            Item {
+                id: content
+                anchors.fill: parent
+                anchors.margins: 10
+                visible: isMain
 
                 // Auto-focus intelligently targets the cover or the input
                 Timer {
@@ -188,7 +169,191 @@ ShellRoot {
                         }
                     }
                 }
+
+                // LEFT SIDE
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignLeft
+                    spacing: theme.spacing
+
+                    // Time Pill
+                    BarModule {
+                        id: timePillBox
+                        implicitWidth: timeText.implicitWidth + 20
+
+                        Text {
+                            id: timeText
+                            anchors.centerIn: parent
+                            text: Qt.formatTime(new Date(), "h:mm AP")
+                            color: theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeMd
+                            font.bold: true
+                        }
+                        
+                        // Update the clock every second so minutes change on time
+                        Timer {
+                            interval: 1000
+                            running: true
+                            repeat: true
+                            onTriggered: timeText.text = Qt.formatTime(new Date(), "h:mm AP")
+                        }
+                    }
+                }
                 
+                // CENTER
+                BarModule {
+                    id: infoBar
+                    anchors.top: parent.top
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    implicitWidth: infoText.implicitWidth + 20
+
+                    Text {
+                        id: infoText
+                        anchors.centerIn: parent
+                        text: "󰌾 Locked"
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeMd
+                        font.bold: true
+                    }
+                }
+                
+                // RIGHT SIDE
+                RowLayout {
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    spacing: theme.spacing
+                    
+                    BarModule {
+                        implicitWidth: statusRow.implicitWidth + 16
+                        
+                        RowLayout {
+                            id: statusRow
+                            anchors.centerIn: parent
+                            spacing: theme.spacing
+                            
+                            // Battery
+                            RowLayout {
+                                visible: battery.battPresent
+                                spacing: 1 // Tight spacing between the battery body and the tip
+                                
+                                // Main Battery Body
+                                Rectangle {
+                                    id: batteryProgress
+                                    Layout.preferredWidth: 30
+                                    Layout.preferredHeight: 16
+                                    Layout.alignment: Qt.AlignVCenter
+                                    radius: 4.5
+                                    
+                                    // Track Color (The empty part of the battery)
+                                    color: theme.surface
+
+                                    // The Solid Fill Level
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width * battery.battLevel
+                                        radius: 4.5
+                                        color: theme.text;
+                                    }
+                                    
+                                    // The Inner Text & Icon
+                                    RowLayout {
+                                        anchors.centerIn: parent
+                                        spacing: 0
+
+                                        // Low Battery
+                                        Text {
+                                            Layout.alignment: Qt.AlignVCenter
+                                            Layout.rightMargin: 1
+                                            text: "!"
+                                            font.family: theme.fontFace
+                                            font.pixelSize: 12
+                                            visible: {
+                                                if (battery.battLevel <= 0.2 && !battery.battCharging) {
+                                                    return true
+                                                }
+                                                return false
+                                            } 
+
+                                            // Cuts out of the solid fill
+                                            color: theme.accent 
+                                        }
+
+                                        // Charging Bolt Icon
+                                        Text {
+                                            Layout.alignment: Qt.AlignVCenter
+                                            Layout.rightMargin: 1
+                                            text: "󱐋"
+                                            font.family: theme.fontFace
+                                            font.pixelSize: 12
+                                            visible: battery.battCharging
+                                            // Cuts out of the solid fill
+                                            color: theme.accent 
+                                        }
+                                        
+                                        // Percentage Text
+                                        Text {
+                                            Layout.alignment: Qt.AlignVCenter
+                                            font.family: theme.fontFace
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                            text: Math.round(battery.battLevel * 100)
+                                            color: theme.accent
+                                        }
+                                    }
+                                }
+
+                                // Battery Tip (The positive terminal nub)
+                                Rectangle {
+                                    Layout.preferredWidth: 2
+                                    Layout.preferredHeight: 6
+                                    Layout.alignment: Qt.AlignVCenter
+                                    radius: 1
+                                    
+                                    // If full, color it with the fill. Otherwise, use the track color.
+                                    color: {
+                                        if (battery.battLevel >= 0.98) {
+                                            return theme.text;
+                                        }
+
+                                        return theme.surface;
+                                    }
+                                }
+                            }
+                            
+                            // Network
+                            Text {
+                                id: networkIcon
+                                text: networkWidget.isWifiActiveRoute ? "󰤥" : "󰈀"
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeXl
+                                color: networkWidget.connectionState === 1 ? theme.accent :
+                                       networkWidget.connectionState === 2 ? theme.urgent :
+                                       networkWidget.currentWifiSsid !== "" ? theme.accent : theme.text 
+                            }
+
+                            // Power
+                            Text {
+                                id: powerIcon
+                                text: "󰐥"
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeXl
+                                color: theme.text
+                                HoverHandler { id: powerIconHover }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: mainWin.togglePopup(lockPowerButtonPopup)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // THE SCREEN COVER
                 Item {
                     id: coverItem
@@ -236,8 +401,8 @@ ShellRoot {
                     enabled: isInputReady
 
                     Rectangle {   
-                        width: 400
-                        height: 300
+                        width: 300
+                        height: 70
                         anchors.centerIn: parent
 
                         color: theme.surface
@@ -245,61 +410,47 @@ ShellRoot {
                         border.color: theme.borderColor
                         radius: theme.radius
 
-                        ColumnLayout {
-                            anchors.centerIn: parent
-                            spacing: 20
-                            width: parent.width * 0.8
-
-                            Text {
-                                text: "Welcome"
-                                font.pixelSize: 24
-                                font.bold: true
-                                color: theme.text
-                                Layout.alignment: Qt.AlignHCenter
-                            }
-
-                            // Status/Prompt Text
-                            Text {
-                                id: statusText
-                                text: "Enter Username"
-                                color: theme.text
-                                font.pixelSize: theme.fontSize
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.fillWidth: true
-                                horizontalAlignment: Text.AlignHCenter
-                                wrapMode: Text.WordWrap
-                            }
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
 
                             // Input Field
-                            Rectangle {
-                                Layout.fillWidth: true
-                                height: 45
-                                color: Qt.darker(theme.surface, 1.2)
-                                radius: theme.radius
-                                border.color: inputField.activeFocus ? theme.accent : "transparent"
-                                border.width: 1
-
-                                TextInput {
-                                    id: inputField
-                                    anchors.fill: parent
-                                    anchors.margins: 15
-                                    verticalAlignment: TextInput.AlignVCenter
-                                    color: theme.text
-                                    font.pixelSize: theme.fontSize
-                                    selectByMouse: true
-                                    focus: true
+                            TextField {
+                                id: inputField
                                 
-                                    echoMode: TextInput.Normal 
-                                    Keys.onReturnPressed: attemptLogin()
-                                    Component.onCompleted: cursorPosition = text.length
-                        
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.IBeamCursor
-                                        onPressed: (mouse) => {
-                                            inputField.forceActiveFocus()
-                                            mouse.accepted = false 
-                                        }
+                                // Looks
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 45
+                                horizontalAlignment: TextInput.AlignHCenter
+                                verticalAlignment: TextField.AlignVCenter
+                                color: theme.text
+                                font.pixelSize: theme.fontSizeMd
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: inputField.text.length === 0
+                                    text: context.showFailure ? "Incorrect Login" : (loginState.state === "username" ? "Enter Username" : "Enter Password")
+                                    color: context.showFailure ? theme.urgent : theme.text
+                                    font.pixelSize: theme.fontSizeMd
+                                }
+                                background: Rectangle {
+                                    color: Qt.darker(theme.surface, 1.2)
+                                    border.color: inputField.activeFocus ? theme.accent : "transparent"
+                                    radius: theme.radius
+                                } 
+                                echoMode: TextInput.Normal 
+
+                                // Function
+                                selectByMouse: true
+                                focus: true
+                                Keys.onReturnPressed: attemptLogin()
+                                Component.onCompleted: cursorPosition = text.length
+                    
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.IBeamCursor
+                                    onPressed: (mouse) => {
+                                        inputField.forceActiveFocus()
+                                        mouse.accepted = false 
                                     }
                                 }
                             }
@@ -307,7 +458,7 @@ ShellRoot {
                             Button {
                                 text: loginState.state === "username" ? "Next" : "Login"
                                 Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 120
+                                Layout.preferredWidth: 80
                                 Layout.preferredHeight: 40
                                     
                                 background: Rectangle {
@@ -329,23 +480,46 @@ ShellRoot {
                             }
                         }
                     }
-                }
-                
-                // Clock
-                Text {
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    anchors.margins: 30
-                    text: Qt.formatDateTime(new Date(), "hh:mm")
-                    font.pixelSize: 64
-                    color: theme.text
-                    opacity: 0.8
+                }    
+            }
 
-                    Timer {
-                        interval: 1000; running: true; repeat: true
-                        onTriggered: parent.text = Qt.formatTime(new Date(), "hh:mm")
-                    }
+            // === POPUPS ===    
+            Popup {
+                id: lockPowerButtonPopup
+                x: mainWin.width - width - 10
+                y: 50
+                width: 400
+                height: 200
+                padding: 0
+                
+                // Bypasses Qt's default background styling completely
+                background: Item {} 
+
+                // Forces Qt to use your UI as the actual content container
+                contentItem: PowerButtonContent {
+                    anchors.fill: parent
+                    theme: root.appTheme
+                    targetWindow: lockPowerButtonPopup
                 }
+            }
+            
+            // === PROCESS'S ===
+            Process {
+                id: ethDetector
+                command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
+                running: true
+            }
+
+            Process {
+                id: wifiDetector
+                command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
+                running: true
+            }
+
+            NetworkWidget {
+                id: networkWidget
+                interfaceName: ethDetector.stdout ? ethDetector.stdout.trim() : "enp15s0"
+                wifiInterfaceName: wifiDetector.stdout ? wifiDetector.stdout.trim() : "wlp14s0"
             }
         }
     }

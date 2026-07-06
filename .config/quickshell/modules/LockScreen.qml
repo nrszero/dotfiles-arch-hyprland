@@ -481,11 +481,13 @@ Item {
         width: 400
         height: 320
         padding: 0
-        background: Item {} 
+
+        background: Rectangle { color: "transparent" }
 
         PowerButtonContent {
             anchors.fill: parent
             theme: root.theme
+            targetWindow: lockPowerButtonPopup
         } 
     }
     

@@ -42,12 +42,11 @@ PopupWindow {
     }
 
     onVisibleChanged: if (visible) { hideTimer.stop(); Qt.callLater(updateHover) }
-
-    Process { id: sysCmd }
-
+ 
     PowerButtonContent {
         anchors.fill: parent
         anchors.margins: 6
         theme: root.theme
+        targetWindow: root
     }
 }
