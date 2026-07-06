@@ -46,6 +46,14 @@ cd ~/dotfiles
     - SKIP_PACKAGES=1 ./install.sh
     - ./install.sh' and package installation option 3)
 
+## Screenshots
+
+|                                 Status Bar & Blurred Windows                                  |                                       Rofi App Launcher                                       |
+| :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
+| <img src="./assets/desktop.png" /> | <img src="./assets/app-launcher.png" /> |
+|                                    **Popup Menu Buttons**                                     |                                    **Minimal Lockscreen**                                     |
+| <img src="./assets/popup.png" /> | <img src="./assets/lock-screen.png" /> |
+
 ## ⚙️ Configuration Highlights
 ### Hyprland (~/.config/hypr/)
 Configuration featuring:
