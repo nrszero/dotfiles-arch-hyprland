@@ -424,7 +424,9 @@ ShellRoot {
                                 horizontalAlignment: TextInput.AlignHCenter
                                 verticalAlignment: TextField.AlignVCenter
                                 color: theme.text
+                                font.family: theme.fontFace
                                 font.pixelSize: theme.fontSizeMd
+                                passwordCharacter: "\u25CF"
                                 Text {
                                     anchors.centerIn: parent
                                     visible: inputField.text.length === 0
