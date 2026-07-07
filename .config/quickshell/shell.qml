@@ -66,6 +66,30 @@ Scope {
     // Effective visibility used by all Bar instances
     readonly property bool barsVisible: persistentBarsVisible || temporaryBarVisible
     
+    property int activeInteractions: 0
+
+    onActiveInteractionsChanged: {
+        if (activeInteractions > 0) {
+            barPeekTimer.stop()
+            if (!persistentBarsVisible) {
+                temporaryBarVisible = true // Ensure it stays open while interacting
+            }
+        } else {
+            // No longer interacting, start the fade-out timer
+            if (!persistentBarsVisible && temporaryBarVisible) {
+                barPeekTimer.restart()
+            }
+        }
+    }
+
+    function registerInteraction() {
+        activeInteractions++
+    }
+
+    function unregisterInteraction() {
+        activeInteractions = Math.max(0, activeInteractions - 1)
+    }
+
     // 3-second auto-hide timer for temporary peeks
     Timer {
         id: barPeekTimer
@@ -78,7 +102,9 @@ Scope {
     function peekBarTemporarily() {
         if (persistentBarsVisible) return
         temporaryBarVisible = true
-        barPeekTimer.restart()
+        if (activeInteractions === 0) { 
+            barPeekTimer.restart()
+        }
     }
 
     GlobalShortcut {
@@ -89,6 +115,13 @@ Scope {
                 if (persistentBarsVisible) {
                     temporaryBarVisible = false
                     barPeekTimer.stop()
+                } else {
+                    // If toggled off but the user is currently hovering, keep it temporarily open
+                    if (activeInteractions > 0) {
+                        temporaryBarVisible = true
+                    } else {
+                        temporaryBarVisible = false
+                    }
                 }
             }
         }
@@ -126,6 +159,14 @@ Scope {
                     notifModel: sharedNotifList
                     dismissNotification: shellRoot.dismissNotification
                     barVisible: shellRoot.barsVisible
+                    
+                    onInteractionStarted: shellRoot.registerInteraction()
+                    onInteractionEnded: shellRoot.unregisterInteraction()
+
+                    // Failsafe: Unregister if a monitor disconnects while hovered
+                    Component.onDestruction: {
+                        shellRoot.unregisterInteraction()
+                    }
                 }
             }
         }

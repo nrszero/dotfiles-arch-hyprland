@@ -34,6 +34,25 @@ PanelWindow {
     property int monitorIndex: hMonitor ? hMonitor.id : 0
     property int baseWs: monitorIndex
     property bool hasFullscreen: false
+    property bool isInteractive: barHover.hovered ||
+                                 networkPopup.visible ||
+                                 bluetoothPopup.visible ||
+                                 volumePopup.visible ||
+                                 powerButtonPopup.visible ||
+                                 shortcutsPopup.visible ||
+                                 calendarPopup.visible ||
+                                 notifCenter.visible
+
+    signal interactionStarted()
+    signal interactionEnded()
+    
+    onIsInteractiveChanged: {
+        if (isInteractive) {
+            root.interactionStarted()
+        } else {
+            root.interactionEnded()
+        }
+    }
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusiveZone: (barVisible && !hasFullscreen) ? implicitHeight : 0
@@ -44,6 +63,10 @@ PanelWindow {
         regions: [
             Region { item: mainLayout }
         ]
+    }
+
+    HoverHandler {
+        id: barHover
     }
 
     Component.onCompleted: {
