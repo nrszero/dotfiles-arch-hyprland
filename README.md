@@ -16,6 +16,14 @@ Managed with GNU Stow.
 - **Neovim** Lua-based editor configuration with LSP and plugins
 - **One-command Installation** with full automation
 
+## Screenshots
+
+|                                 Status Bar & Blurred Windows                                  |                                       Rofi App Launcher                                       |
+| :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
+| <img src="./assets/desktop.png" /> | <img src="./assets/app-launcher.png" /> |
+|                                    **Popup Menu Buttons**                                     |                                    **Minimal Lockscreen**                                     |
+| <img src="./assets/popup.png" /> | <img src="./assets/lock-screen.png" /> |
+
 ## 📦 Installation
 
 ### System Requirements
@@ -82,14 +90,6 @@ chmod +x ~/dotfiles/install.sh
 **Greeter/Lock screen not loading**
 - Check monitor configuration in the post-install step above
 - Verify greetd service is enabled: `sudo systemctl enable greetd`
-
-## Screenshots
-
-|                                 Status Bar & Blurred Windows                                  |                                       Rofi App Launcher                                       |
-| :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
-| <img src="./assets/desktop.png" /> | <img src="./assets/app-launcher.png" /> |
-|                                    **Popup Menu Buttons**                                     |                                    **Minimal Lockscreen**                                     |
-| <img src="./assets/popup.png" /> | <img src="./assets/lock-screen.png" /> |
 
 ## ⚙️ Configuration Highlights
 
