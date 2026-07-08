@@ -83,10 +83,6 @@ SKIP_PACKAGES=1 ./install.sh
 chmod +x ~/dotfiles/install.sh
 ```
 
-**NVIDIA GPU not detected**
-- Ensure NVIDIA drivers are installed: `pacman -S nvidia nvidia-utils`
-- Run install script again
-
 **Greeter/Lock screen not loading**
 - Check monitor configuration in the post-install step above
 - Verify greetd service is enabled: `sudo systemctl enable greetd`
