@@ -69,6 +69,9 @@ config_system() {
     else
         log "-> Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
     fi
+    
+    # Enable required services
+    sudo systemctl enable greetd.service
 }
 
 copy_etc() {
