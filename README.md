@@ -1,4 +1,4 @@
-# nrszero's Dotfiles
+# nrszero's Dotfiles Arch-Hyprland
 
 Arch Linux + Hyprland configuration files.
 
