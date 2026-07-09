@@ -43,7 +43,7 @@ pacman -S --needed --noconfirm stow yay
 ### Quick Install
 
 ```bash
-git clone https://github.com/nrszero/dotfiles.git ~/dotfiles
+git clone https://github.com/nrszero/dotfiles-arch-hyprland.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh
 ```
