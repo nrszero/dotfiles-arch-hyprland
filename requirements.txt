@@ -1,3 +1,4 @@
+[required]
 awww-git
 brightnessctl
 hyprland
@@ -43,3 +44,22 @@ npm
 nwg-look
 gnome-themes-extra
 xdg-desktop-portal-hyprland
+wireless-regdb
+
+[full]
+steam
+lutris
+prismlauncher
+wine
+winetricks
+openrazer-daemon
+xone-dkms
+discord
+google-chrome
+visual-studio-code-bin
+krita
+
+[nvidia]
+nvidia-open-dkms
+nvidia-settings
+lib32-nvidia-utils

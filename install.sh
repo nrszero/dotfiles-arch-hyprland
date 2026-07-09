@@ -17,32 +17,39 @@ prompt_menu() {
     echo "  3) Install no packages"
     echo ""
     read -r -p "Enter choice [1-3]: " choice
-
+    
     case $choice in
-        1)
-            PKG_FILE="$DOTFILES/required_packages.txt"
-            ;;
-        2)
-            PKG_FILE="$DOTFILES/full_packages.txt"
-            ;;
-        3)
-            PKG_FILE="none"
-            ;;
-        *)
-            log "Invalid option. Exiting."
-            exit 1
-            ;;
+        1) INSTALL_MODE="required" ;;
+        2) INSTALL_MODE="full" ;;
+        3) INSTALL_MODE="none" ;;
+        *) log "Invalid option. Exiting."; exit 1 ;;
     esac
 }
 
+get_packages() {
+    local section=$1
+    awk -v sec="[$section]" '
+        $0 == sec {flag=1; next}     # Start capturing when header matches
+        /^\[.*\]$/ {flag=0}          # Stop capturing at the next header
+        flag && NF {print $1}        # Print non-empty lines
+    ' "$DOTFILES/requirements.txt"
+}
+
 install_packages() {
-    if [[ "${SKIP_PACKAGES:-0}" == "1" ]] || [[ "$PKG_FILE" == "none" ]]; then
+    if [[ "${SKIP_PACKAGES:-0}" == "1" ]] || [[ "$INSTALL_MODE" == "none" ]]; then
         log "Skipping package installation."
         return
     fi
     
-    log "Installing packages from $(basename "$PKG_FILE")..."
-    yay -S --needed --noconfirm - < "$PKG_FILE"
+    log "Parsing packages from requirements.txt..."
+    
+    # Group the required and optional packages, then pipe directly to yay
+    {
+        get_packages "required"
+        if [[ "$INSTALL_MODE" == "full" ]]; then
+            get_packages "full"
+        fi
+    } | yay -S --needed --noconfirm -
 
     config_system
 }
@@ -54,8 +61,8 @@ config_system() {
         log "-> Enabling Wayland sleep services..."
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
 
-        log "-> Installing packages from nvidia_packages.txt"
-        yay -S --needed --noconfirm - < "$DOTFILES/nvidia_packages.txt"
+        log "-> Installing NVIDIA packages from requirements.txt"
+        get_packages "nvidia" | yay -S --needed --noconfirm -
         
         # Append kernel parameter if not already present
         if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/default/grub; then
