@@ -57,13 +57,16 @@ install_packages() {
     
     log "Parsing packages from requirements.txt..."
     
-    # Group the required and optional packages, then pipe directly to yay
-    {
-        get_packages "required"
-        if [[ "$INSTALL_MODE" == "full" ]]; then
-            get_packages "full"
-        fi
-    } | yay -S --needed --noconfirm -
+    # Read packages into an array safely
+    mapfile -t req_pkgs < <(get_packages "required")
+    
+    if [[ "$INSTALL_MODE" == "full" ]]; then
+        mapfile -t full_pkgs < <(get_packages "full")
+        req_pkgs+=("${full_pkgs[@]}")
+    fi
+
+    # Pass the array to yay
+    yay -S --needed --noconfirm "${req_pkgs[@]}"
 
     config_system
 
@@ -76,7 +79,8 @@ config_system() {
         sub_log "NVIDIA GPU detected."
 
         sub_log "Installing NVIDIA packages from requirements.txt"
-        get_packages "nvidia" | yay -S --needed --noconfirm -
+        mapfile -t nvidia_pkgs < <(get_packages "nvidia")
+        yay -S --needed --noconfirm "${nvidia_pkgs[@]}"
 
         sub_log "Enabling Wayland sleep services..."
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
@@ -93,7 +97,7 @@ config_system() {
             sudo grub-mkconfig -o /boot/grub/grub.cfg
         fi
     else
-        sub_log "-> Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
+        sub_log "Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
     fi
     
     # Enable required services
