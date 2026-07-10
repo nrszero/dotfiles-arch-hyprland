@@ -63,3 +63,9 @@ krita
 nvidia-open-dkms
 nvidia-settings
 lib32-nvidia-utils
+
+[intel]
+vulkan-intel
+
+[amd]
+vulkan-radeon

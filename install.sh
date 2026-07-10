@@ -91,6 +91,19 @@ install_packages() {
 }
 
 config_system() {
+    # CPU Detection for integrated Vulkan drivers
+    if grep -qi "GenuineIntel" /proc/cpuinfo; then
+        sub_log "Intel CPU detected. Installing Intel Vulkan drivers..."
+        mapfile -t cpu_pkgs < <(get_packages "intel")
+        yay -S --needed --noconfirm "${cpu_pkgs[@]}"
+    elif grep -qi "AuthenticAMD" /proc/cpuinfo; then
+        sub_log "AMD CPU detected. Installing AMD Vulkan drivers..."
+        mapfile -t cpu_pkgs < <(get_packages "amd")
+        yay -S --needed --noconfirm "${cpu_pkgs[@]}"
+    else
+        sub_log "Could not explicitly identify Intel or AMD CPU. Skipping specific Vulkan drivers."
+    fi
+
     # Check if an Nvidia GPU is present
     if lspci | grep -iE 'vga|3d' | grep -iq 'nvidia'; then
         sub_log "NVIDIA GPU detected."
@@ -114,7 +127,7 @@ config_system() {
             sudo grub-mkconfig -o /boot/grub/grub.cfg
         fi
     else
-        sub_log "Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
+        sub_log "Non-NVIDIA GPU detected. Skipping proprietary sleep hooks."
     fi
     
     # Enable required services
