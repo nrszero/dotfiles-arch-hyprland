@@ -1,6 +1,6 @@
 local monitors = dofile("/etc/greetd/monitors.lua")
-LEFT_MONITOR = monitors.LEFT_MONITOR
-RIGHT_MONITOR = monitors.RIGHT_MONITOR
+LEFT_MONITOR = monitors.primary and monitors.primary.name or ""
+RIGHT_MONITOR = monitors.secondary and monitors.secondary.name or ""
 
 hl.env("QT_QPA_PLATFORM", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
@@ -12,21 +12,25 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("quickshell -p /etc/greetd/QuickshellGreeter.qml > /var/tmp/quickshell-greeter.log 2>&1; hyprctl dispatch exit")
 end)
 
-hl.monitor({
-    output   = LEFT_MONITOR,
-    mode     = "highrr",
-    position = "0x0",
-    scale    = 1,
-    bitdepth = 10,
-})
+if monitors.primary then
+    hl.monitor({
+        output   = monitors.primary.name,
+        mode     = monitors.primary.mode or "preferred",
+        position = monitors.primary.position or "auto",
+        scale    = monitors.primary.scale or 1,
+        bitdepth = monitors.primary.bitdepth or 8,
+    })
+end
 
-hl.monitor({
-    output   = RIGHT_MONITOR,
-    mode     = "highrr",
-    position = "2560x0",
-    scale    = 1,
-    bitdepth = 10,
-})
+if monitors.secondary then
+    hl.monitor({
+        output   = monitors.secondary.name,
+        mode     = monitors.secondary.mode or "preferred",
+        position = monitors.secondary.position or "auto",
+        scale    = monitors.secondary.scale or 1,
+        bitdepth = monitors.secondary.bitdepth or 8,
+    })
+end
 
 -- Fallback for any other random monitors you plug in
 hl.monitor({

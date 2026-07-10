@@ -210,8 +210,15 @@ generate_local_config() {
         log "Generating system monitor override file (monitors.lua)..."
         cat << 'EOF' > "$monitor_file"
 return {
-    LEFT_MONITOR = "HDMI-A-1",
-    RIGHT_MONITOR = "DP-1"
+    -- Check connected monitors with hyprctl monitors.
+    -- Edit the below to fit your setup.
+
+    -- Standard Laptop config:
+    -- primary = {name = "eDP-1", mode = "preferred", position = "0x0", scale = 1, bitdepth = 8 }
+
+    -- Standard Desktop config:
+    primary = { name = "HDMI-A-1", mode = "highrr", position = "0x0", scale = 1, bitdepth = 10 },
+    secondary = { name = "DP-1", mode = "highrr", position = "2560x0", scale = 1, bitdepth = 10 }
 }
 EOF
         sudo chmod 644 "$monitor_file"
