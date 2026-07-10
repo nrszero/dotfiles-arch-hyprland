@@ -50,14 +50,6 @@ cd ~/dotfiles
 
 When prompted, **choose option 1** to install all required packages.
 
-### What the Install Script Does
-
-- Installs all required packages via pacman and yay
-- Auto-detects NVIDIA GPU and configures accordingly
-- Symlinks configurations to `~/.config` using stow
-- Deploys system-wide configs to `/etc` (requires sudo)
-- Installs wallpapers to `/usr/share/wallpapers`
-
 ### Post-Installation Configuration
 
 **Important**: You may need to adjust your monitor configuration before first login.
@@ -75,6 +67,15 @@ SKIP_PACKAGES=1 ./install.sh
 # Option 2: Run installer again and choose option 3
 ./install.sh  # then select "3) Skip packages, only deploy configs"
 ```
+
+### What the Install Script Does
+
+- Installs all required packages via pacman and yay
+- Auto-detects NVIDIA GPU and configures accordingly
+- Safely backs up any ~/.config files to a timestamped ~/.config.bak/ directory
+- Symlinks configurations to `~/.config` using stow
+- Deploys system-wide configs to `/etc` (requires sudo)
+- Installs wallpapers to `/usr/share/wallpapers`
 
 ### Troubleshooting
 
