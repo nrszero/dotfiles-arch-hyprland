@@ -54,9 +54,8 @@ When prompted, **choose option 1** to install all required packages.
 
 **Important**: You may need to adjust your monitor configuration before first login.
 
-Edit these files to match your display setup:
-- `~/.config/hypr/hyprland.lua` - Hyprland monitor configuration
-- `~/.config/greetd/hyprland.lua` - Login screen monitor configuration
+Edit this file to match your display setup:
+- `~/dotfiles/etc/greetd/monitors.lua` - Global monitor configuration
 
 Then redeploy system configs:
 
