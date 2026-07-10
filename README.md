@@ -34,15 +34,19 @@ Managed with GNU Stow.
 
 ### Prerequisites
 
-Install `git`, `stow`, `yay` (AUR helper):
+Install `git`, `base-devel`, `stow`, `yay` (AUR helper):
 
 ```bash
-pacman -S --needed --noconfirm git stow yay
+pacman -S --needed --noconfirm git base-devel stow
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
 ```
 
 ### Quick Install
 
 ```bash
+cd ~/
 git clone https://github.com/nrszero/dotfiles-arch-hyprland.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh

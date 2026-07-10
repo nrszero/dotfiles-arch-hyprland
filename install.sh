@@ -40,13 +40,30 @@ get_packages() {
 
 check_dependencies() {
     log "Checking prerequisites..."
-    local deps=("yay" "stow" "git")
+    local deps=("git" "base-devel" "stow" "yay")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             warn "'$dep' is not installed. Please install it before running this script."
             exit 1
         fi
     done
+}
+
+enable_multilib() {
+    log "Checking multilib repository status..."
+    
+    # Check if [multilib] is already uncommented
+    if grep -q "^\[multilib\]" /etc/pacman.conf; then
+        sub_log "multilib is already enabled."
+    else
+        sub_log "Enabling multilib in /etc/pacman.conf..."
+        
+        # sed logic: find ^#[multilib], remove the #, move to next line (n), remove the #
+        sudo sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//;}' /etc/pacman.conf
+        
+        sub_log "Syncing pacman databases..."
+        sudo pacman -Sy
+    fi
 }
 
 install_packages() {
@@ -193,6 +210,7 @@ main() {
 
     check_dependencies
     prompt_menu
+    enable_multilib
     install_packages
     generate_local_config
     copy_etc
