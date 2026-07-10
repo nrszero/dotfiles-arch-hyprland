@@ -105,8 +105,41 @@ copy_etc() {
 }
 
 stow_user() {
+    log "Checking for existing user configs to backup..."
+    local target_dir="$HOME/.config"
+    local backup_dir="$HOME/.config.bak/$(date +%Y%m%d_%H%M%S)"
+    local made_backup=0
+
+    # Ensure the repo has a .config directory before trying to read it
+    if [ -d "$DOTFILES/.config" ]; then
+        # Enable dotglob to include hidden files/folders in the loop, nullglob to prevent literal '*' if empty
+        shopt -s dotglob nullglob
+        
+        for item in "$DOTFILES/.config"/*; do
+            local base_item=$(basename "$item")
+            local target_item="$target_dir/$base_item"
+
+            # If the target path exists on the local machine and is NOT already a symlink
+            if [ -e "$target_item" ] && [ ! -L "$target_item" ]; then
+                # Create the backup directory only if we actually find a conflict
+                if [ $made_backup -eq 0 ]; then
+                    mkdir -p "$backup_dir"
+                    log "Created backup directory: $backup_dir"
+                    made_backup=1
+                fi
+                
+                log "Moving existing config to backup: $base_item"
+                mv "$target_item" "$backup_dir/"
+            fi
+        done
+        
+        # Reset shell options to default
+        shopt -u dotglob nullglob
+    fi
+
     log "Stowing user configs (.config/)..."
-    stow -v --target ~/.config --restow --adopt .config
+    # Removed --adopt to strictly enforce the repo as the source of truth
+    stow -v --target "$target_dir" --restow .config
 }
 
 stow_wallpapers() {
@@ -114,7 +147,7 @@ stow_wallpapers() {
     if [ -d "$DOTFILES/wallpapers" ]; then
         sudo mkdir -p /usr/share/wallpapers
         sudo stow -D wallpapers 2>/dev/null || true
-        sudo stow -v --target /usr/share/wallpapers --restow --adopt wallpapers
+        sudo stow -v --target /usr/share/wallpapers --restow wallpapers
     fi
 }
 
