@@ -1,6 +1,6 @@
-
-LEFT_MONITOR = "HDMI-A-1"
-RIGHT_MONITOR = "DP-1"
+local monitors = dofile("/etc/greetd/monitors.lua")
+LEFT_MONITOR = monitors.LEFT_MONITOR
+RIGHT_MONITOR = monitors.RIGHT_MONITOR
 
 hl.env("QT_QPA_PLATFORM", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")

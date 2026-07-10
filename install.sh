@@ -174,12 +174,27 @@ stow_wallpapers() {
     fi
 }
 
+generate_local_config() {
+    local monitor_file="$DOTFILES/etc/greetd/monitors.lua"
+    if [ ! -f "$monitor_file" ]; then
+        log "Generating system monitor override file (monitors.lua)..."
+        cat << 'EOF' > "$monitor_file"
+return {
+    LEFT_MONITOR = "HDMI-A-1",
+    RIGHT_MONITOR = "DP-1"
+}
+EOF
+        sudo chmod 644 "$monitor_file"
+    fi
+}
+
 main() {
     sudo -v
 
     check_dependencies
     prompt_menu
     install_packages
+    generate_local_config
     copy_etc
     stow_user
     stow_wallpapers
