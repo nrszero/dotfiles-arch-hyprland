@@ -3,7 +3,10 @@ set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-log() { printf '==> %s\n' "$*"; }
+log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
+sub_log() { printf '\033[1;34m  ->\033[0m %s\n' "$*"; } # Use this inside functions
+warn() { printf '\033[1;33m==> WARNING:\033[0m %s\n' "$*"; }
+success() { printf '\033[1;32m==> SUCCESS:\033[0m %s\n' "$*"; }
 
 prompt_menu() {
     if [[ "${SKIP_PACKAGES:-0}" == "1" ]]; then
@@ -22,7 +25,7 @@ prompt_menu() {
         1) INSTALL_MODE="required" ;;
         2) INSTALL_MODE="full" ;;
         3) INSTALL_MODE="none" ;;
-        *) log "Invalid option. Exiting."; exit 1 ;;
+        *) warn "Invalid option. Exiting."; exit 1 ;;
     esac
 }
 
@@ -33,6 +36,17 @@ get_packages() {
         /^\[.*\]$/ {flag=0}          # Stop capturing at the next header
         flag && NF {print $1}        # Print non-empty lines
     ' "$DOTFILES/requirements.txt"
+}
+
+check_dependencies() {
+    log "Checking prerequisites..."
+    local deps=("yay" "stow" "git")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            warn "'$dep' is not installed. Please install it before running this script."
+            exit 1
+        fi
+    done
 }
 
 install_packages() {
@@ -52,32 +66,38 @@ install_packages() {
     } | yay -S --needed --noconfirm -
 
     config_system
+
+    success "All packages installed and system configured."
 }
 
 config_system() {
     # Check if an Nvidia GPU is present
     if lspci | grep -iE 'vga|3d' | grep -iq 'nvidia'; then
-        log "-> NVIDIA GPU detected."
-        log "-> Enabling Wayland sleep services..."
-        sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+        sub_log "NVIDIA GPU detected."
 
-        log "-> Installing NVIDIA packages from requirements.txt"
+        sub_log "Installing NVIDIA packages from requirements.txt"
         get_packages "nvidia" | yay -S --needed --noconfirm -
-        
+
+        sub_log "Enabling Wayland sleep services..."
+        sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+                
         # Append kernel parameter if not already present
         if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/default/grub; then
+            sub_log "Adding NVreg_PreserveVideoMemoryAllocations to GRUB..."
             sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia.NVreg_PreserveVideoMemoryAllocations=1 /' /etc/default/grub
             sudo grub-mkconfig -o /boot/grub/grub.cfg
         fi
         if ! grep -q "nvidia_drm.modeset" /etc/default/grub; then
+            sub_log "Adding nvidia_drm.modeset to GRUB..."
             sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia_drm.modeset=1 /' /etc/default/grub
             sudo grub-mkconfig -o /boot/grub/grub.cfg
         fi
     else
-        log "-> Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
+        sub_log "-> Non-NVIDIA GPU detected (AMD/Intel). Skipping proprietary sleep hooks."
     fi
     
     # Enable required services
+    sub_log "Enabling greetd service..."
     sudo systemctl enable greetd.service
 }
 
@@ -101,7 +121,7 @@ copy_etc() {
     sudo find /etc/greetd /etc/pam.d /etc/awww -type f -name "*.sh" -exec chmod 755 {} + 2>/dev/null || true
     sudo find /etc/greetd /etc/pam.d /etc/awww -type d -exec chmod 755 {} + 2>/dev/null || true
 
-    log "System configuration copied with correct root ownership and permissions."
+    success "System configuration copied with correct root ownership and permissions."
 }
 
 stow_user() {
@@ -124,11 +144,11 @@ stow_user() {
                 # Create the backup directory only if we actually find a conflict
                 if [ $made_backup -eq 0 ]; then
                     mkdir -p "$backup_dir"
-                    log "Created backup directory: $backup_dir"
+                    sub_log "Created backup directory: $backup_dir"
                     made_backup=1
                 fi
                 
-                log "Moving existing config to backup: $base_item"
+                sub_log "Moving existing config to backup: $base_item"
                 mv "$target_item" "$backup_dir/"
             fi
         done
@@ -138,7 +158,6 @@ stow_user() {
     fi
 
     log "Stowing user configs (.config/)..."
-    # Removed --adopt to strictly enforce the repo as the source of truth
     stow -v --target "$target_dir" --restow .config
 }
 
@@ -152,13 +171,17 @@ stow_wallpapers() {
 }
 
 main() {
+    sudo -v
+
+    check_dependencies
     prompt_menu
     install_packages
     copy_etc
     stow_user
     stow_wallpapers
-
-    log "Dotfiles installed!"
+    
+    echo ""
+    success "Dotfiles installed successfully!"
     log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
 }
 

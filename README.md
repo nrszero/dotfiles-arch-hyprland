@@ -34,10 +34,10 @@ Managed with GNU Stow.
 
 ### Prerequisites
 
-Install `stow` and `yay` (AUR helper):
+Install `git`, `stow`, `yay` (AUR helper):
 
 ```bash
-pacman -S --needed --noconfirm stow yay
+pacman -S --needed --noconfirm git stow yay
 ```
 
 ### Quick Install
