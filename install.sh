@@ -40,7 +40,7 @@ get_packages() {
 
 check_dependencies() {
     log "Checking prerequisites..."
-    local deps=("git" "base-devel" "stow" "yay")
+    local deps=("git" "stow" "yay")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             warn "'$dep' is not installed. Please install it before running this script."
