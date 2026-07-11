@@ -375,7 +375,7 @@ Item {
             focus: visible
 
             Rectangle {
-                width: 300
+                width: 350
                 height: 70
                 anchors.centerIn: parent
                 
@@ -412,7 +412,7 @@ Item {
             enabled: isInputReady
 
             Rectangle {
-                width: 300
+                width: 350
                 height: 70
                 anchors.centerIn: parent
 
@@ -440,9 +440,13 @@ Item {
                         passwordCharacter: "\u25CF"
                         Text {
                             anchors.centerIn: parent
-                            visible: inputField.text.length === 0 
-                            text: context.showFailure ? "Incorrect password" : "Enter Password"
-                            color: context.showFailure ? theme.urgent : theme.text
+                            visible: inputField.text.length === 0
+                            text: {
+                                if (context.showFailure) return "Incorrect Password"
+                                if (context.maxTries) return "Locked Account (10 min)"
+                                return "Enter Password"
+                            }
+                            color: (context.showFailure || context.maxTries) ? theme.urgent : theme.text
                             font.pixelSize: theme.fontSizeMd
                         }
                         background: Rectangle {

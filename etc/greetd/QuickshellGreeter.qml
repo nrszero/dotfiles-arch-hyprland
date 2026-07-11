@@ -66,8 +66,10 @@ ShellRoot {
                 target: Greetd
                 
                 property bool showFailure: false
+                property bool maxTries: false
 
                 function onAuthMessage(message, isError, responseRequired, echo) {
+                    console.log("[GREETD] Message:", message, "responseRequired:", responseRequired)
                     context.showFailure = false
                     
                     if (responseRequired) {
@@ -76,12 +78,17 @@ ShellRoot {
                         inputField.inputMethodHints = echo ? Qt.ImhNone : Qt.ImhSensitiveData
                         inputField.forceActiveFocus()
                         loginState.state = "password"
+                    } else if (message.includes("lock")) {
+                        context.maxTries = true
                     }
                 }
 
                 function onAuthFailure(message) {
-                    context.showFailure = true
-
+                    console.log("[GREETD] Failed with message:", message)
+                    if (!context.maxTries) {
+                        context.showFailure = true
+                    }
+                   
                     loginState.state = "username"
                     inputField.text = ""
                     inputField.echoMode = TextInput.Normal
@@ -97,7 +104,9 @@ ShellRoot {
                 }
 
                 function onError(error) {
-                    context.showFailure = true
+                    if (!context.maxTries) {
+                        context.showFailure = true
+                    }
                 }
             }
 
@@ -364,7 +373,7 @@ ShellRoot {
                     focus: visible
 
                     Rectangle {
-                        width: 300
+                        width: 350
                         height: 70
                         anchors.centerIn: parent
                         
@@ -401,7 +410,7 @@ ShellRoot {
                     enabled: isInputReady
 
                     Rectangle {   
-                        width: 300
+                        width: 350
                         height: 70
                         anchors.centerIn: parent
 
@@ -430,8 +439,13 @@ ShellRoot {
                                 Text {
                                     anchors.centerIn: parent
                                     visible: inputField.text.length === 0
-                                    text: context.showFailure ? "Incorrect Login" : (loginState.state === "username" ? "Enter Username" : "Enter Password")
-                                    color: context.showFailure ? theme.urgent : theme.text
+                                    text: {
+                                        if (context.showFailure) return "Incorrect Password"
+                                        if (context.maxTries) return "Locked Account (10 min)"
+                                        if (loginState.state === "username") return "Enter Username"
+                                        return "Enter Password"
+                                    }
+                                    color: (context.showFailure || context.maxTries) ? theme.urgent : theme.text
                                     font.pixelSize: theme.fontSizeMd
                                 }
                                 background: Rectangle {

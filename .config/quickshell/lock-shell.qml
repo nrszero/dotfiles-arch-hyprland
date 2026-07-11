@@ -15,38 +15,52 @@ ShellRoot {
         property string currentText: ""
         property bool unlockInProgress: false
         property bool showFailure: false
+        property bool maxTries: false
         
         signal unlocked()
-
-        onCurrentTextChanged: showFailure = false
+        
+        onCurrentTextChanged: {
+            showFailure = false
+        }
 
         function tryUnlock() {
             if (currentText.trim() === "") return
             unlockInProgress = true
+            maxTries = false
             pam.start()
         }
         
         PamContext {
             id: pam
-
-            // Explicitly use the system quickshell PAM service we created
             configDirectory: "/etc/pam.d"
             config: "quickshell"
 
-            onPamMessage: (message, responseRequired, echo) => {
-                console.log("[PAM] Message:", message, "responseRequired:", this.responseRequired)
-                if (this.responseRequired) {
+            onPamMessage: {
+                console.log("[PAM] Message:", pam.message, "responseRequired:", pam.responseRequired)
+                
+                // Intercept the pam_faillock text warning to flag the lockout
+                if (pam.message && pam.message.includes("locked")) {
+                    lockContext.maxTries = true
+                }
+
+                if (pam.responseRequired) {
                     pam.respond(lockContext.currentText)
                 }
             }
 
-            onCompleted: result => {
+            onCompleted: function(result) {
                 console.log("[PAM] Completed with result:", result)
+                
                 if (result === PamResult.Success) {
                     lockContext.unlocked()
-                } else {
+                } else if (result === PamResult.Failed) {
                     lockContext.currentText = ""
-                    lockContext.showFailure = true
+                    
+                    // Only show standard failure if the account hasn't been flagged as locked
+                    if (!lockContext.maxTries) {
+                        lockContext.showFailure = true
+                    }
+                    
                     lockContext.unlockInProgress = false
                 }
             }
