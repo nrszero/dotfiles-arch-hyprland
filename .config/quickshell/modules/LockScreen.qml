@@ -11,46 +11,33 @@ Item {
     id: root
     required property var context
     required property var targetScreen
-    required property var theme
-
-    // Strict: True ONLY when Wayland confirms this is definitely the main screen
-    property bool isMain: !!(targetScreen && targetScreen.x === 0)
     
-    // Tracks if the user has dismissed the cover
-    property bool isInputReady: false
+    property QtObject theme: QtObject {
+        // --- COLORS (Nord Palette) ---
+        property color background: "#33242933" // Dark grey with transparency
+        property color surface:    "#333b4252" // Lighter grey for "Cards"
+        property color text:       "#eceff4"   // White-ish text
+        property color subText:    "#d8dee9"   // Slightly dimmer text
+        property color accent:     "#5e81ac"   // Cyan/Blue accent
+        property color urgent:     "#bf616a"   // Red for errors/power
+        property color success:    "#a3be8c"   // Green
+        property color borderColor: "#3388c0d0" // Subtle border for glass look
+
+        // --- GEOMETRY ---
+        property int radius: 12        // A bit sharper looks more "tech" than 15
+        property int spacing: 10
+        property int padding: 12
+        property int borderWidth: 0
+
+        // --- FONTS ---
+        property string fontFace: "JetBrainsMono Nerd Font"
+        property int fontSizeSm: 12
+        property int fontSizeMd: 16
+        property int fontSizeLg: 18
+        property int fontSizeXl: 24
+        property int fontSizeXXl: 30
+    }
     
-    function togglePopup(target) {
-        let popups = [
-            lockPowerButtonPopup
-        ]
-        
-        for (let p of popups) {
-            if (p !== target) p.visible = false
-        }
-        target.visible = !target.visible
-    }
-
-    onIsMainChanged: {
-        // Use the native Hyprland module to dispatch the command
-        if (isMain && targetScreen && targetScreen.name) {
-            console.log("[LockScreen] Screen recognized, starting 250ms warp delay...")
-            warpTimer.restart()
-        }
-    }
-
-    // Delayed timer to let hardware interrupts and DPMS settle before warping the mouse
-    Timer {
-        id: warpTimer
-        interval: 250 // 250 milliseconds
-        repeat: false
-        onTriggered: {
-            if (isMain && targetScreen && targetScreen.name) {
-                console.log("[LockScreen] Delayed warp firing for monitor:", targetScreen.name)
-                Hyprland.dispatch(`hl.dsp.focus({ monitor = "${targetScreen.name}" })`)
-            }
-        }
-    }
-
     // --- DYNAMIC THEMING ---
     FileView {
         id: greeterColors
@@ -90,7 +77,45 @@ Item {
             }
         }
     }
+
+    // Strict: True ONLY when Wayland confirms this is definitely the main screen
+    property bool isMain: !!(targetScreen && targetScreen.x === 0)
     
+    // Tracks if the user has dismissed the cover
+    property bool isInputReady: false
+    
+    function togglePopup(target) {
+        let popups = [
+            lockPowerButtonPopup
+        ]
+        
+        for (let p of popups) {
+            if (p !== target) p.visible = false
+        }
+        target.visible = !target.visible
+    }
+
+    onIsMainChanged: {
+        // Use the native Hyprland module to dispatch the command
+        if (isMain && targetScreen && targetScreen.name) {
+            console.log("[LockScreen] Screen recognized, starting 250ms warp delay...")
+            warpTimer.restart()
+        }
+    }
+
+    // Delayed timer to let hardware interrupts and DPMS settle before warping the mouse
+    Timer {
+        id: warpTimer
+        interval: 250 // 250 milliseconds
+        repeat: false
+        onTriggered: {
+            if (isMain && targetScreen && targetScreen.name) {
+                console.log("[LockScreen] Delayed warp firing for monitor:", targetScreen.name)
+                Hyprland.dispatch(`hl.dsp.focus({ monitor = "${targetScreen.name}" })`)
+            }
+        }
+    }
+        
     Rectangle {
         anchors.fill: parent
         color: "black"

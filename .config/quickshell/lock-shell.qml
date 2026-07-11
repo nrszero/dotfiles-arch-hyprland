@@ -12,8 +12,6 @@ ShellRoot {
     Scope {
         id: lockContext
         
-        Theme { id: appTheme }
-
         property string currentText: ""
         property bool unlockInProgress: false
         property bool showFailure: false
@@ -112,7 +110,6 @@ ShellRoot {
                 LockScreen {
                     context: lockContext
                     targetScreen: lockSurface.screen
-                    theme: appTheme
                 }
             }
 
