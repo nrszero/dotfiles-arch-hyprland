@@ -160,7 +160,7 @@ copy_etc() {
 
 stow_user() {
     log "Checking for existing user configs to backup..."
-    local target_dir="$HOME/.config"
+    local config_target="$HOME/.config"
     local backup_dir="$HOME/.config.bak/$(date +%Y%m%d_%H%M%S)"
     local made_backup=0
 
@@ -171,7 +171,7 @@ stow_user() {
         
         for item in "$DOTFILES/.config"/*; do
             local base_item=$(basename "$item")
-            local target_item="$target_dir/$base_item"
+            local target_item="$config_target/$base_item"
 
             # If the target path exists on the local machine and is NOT already a symlink
             if [ -e "$target_item" ] && [ ! -L "$target_item" ]; then
@@ -192,7 +192,23 @@ stow_user() {
     fi
 
     log "Stowing user configs (.config/)..."
-    stow -v --target "$target_dir" --restow .config
+    stow -v --target "$config_target" --restow .config
+   
+    # Backup default .bashrc if it exists and isn't a symlink
+    local bashrc_target="$HOME/.bashrc"
+    if [ -f "$bashrc_target" ] && [ ! -L "$bashrc_target" ]; then
+        if [ $made_backup -eq 0 ]; then
+            mkdir -p "$backup_dir"
+            sub_log "Created backup directory: $backup_dir"
+            made_backup=1
+        fi
+        
+        sub_log "Moving existing .bashrc to backup"
+        mv "$bashrc_target" "$backup_dir/"
+    fi
+
+    log "Stowing (.bashrc)..."
+    stow -v --target "$HOME" --restow home
 }
 
 stow_wallpapers() {
