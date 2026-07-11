@@ -147,8 +147,10 @@ PopupWindow {
                     
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                         onPositionChanged: (mouse) => {
-                            if (Pipewire.defaultAudioSink) {
+                            if (pressed && Pipewire.defaultAudioSink) {
                                 Pipewire.defaultAudioSink.audio.muted = false // Auto-unmute on drag
                                 Pipewire.defaultAudioSink.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
                             }
@@ -234,8 +236,10 @@ PopupWindow {
                     
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                         onPositionChanged: (mouse) => {
-                            if (Pipewire.defaultAudioSource) {
+                            if (pressed && Pipewire.defaultAudioSource) {
                                 Pipewire.defaultAudioSource.audio.muted = false
                                 Pipewire.defaultAudioSource.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
                             }
