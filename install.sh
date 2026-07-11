@@ -121,10 +121,21 @@ config_system() {
             sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia.NVreg_PreserveVideoMemoryAllocations=1 /' /etc/default/grub
             sudo grub-mkconfig -o /boot/grub/grub.cfg
         fi
+        if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/kernel/cmdline; then
+            sub_log "Adding NVreg_PreserveVideoMemoryAllocations to UKI cmdline..."
+            sudo sed -i 's/root=.* rw/& nvidia.NVreg_PreserveVideoMemoryAllocations=1/' /etc/kernel/cmdline
+            sudo mkinitcpio -P
+        fi
+
         if ! grep -q "nvidia_drm.modeset" /etc/default/grub; then
             sub_log "Adding nvidia_drm.modeset to GRUB..."
             sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia_drm.modeset=1 /' /etc/default/grub
             sudo grub-mkconfig -o /boot/grub/grub.cfg
+        fi
+        if ! grep -q "nvidia_drm.modeset" /etc/kernel/cmdline; then
+            sub_log "Adding nvidia_drm.modeset to UKI cmdline..."
+            sudo sed -i 's/root=.* rw/& nvidia_drm.modeset=1/' /etc/kernel/cmdline
+            sudo mkinitcpio -P
         fi
     else
         sub_log "Non-NVIDIA GPU detected. Skipping proprietary sleep hooks."
