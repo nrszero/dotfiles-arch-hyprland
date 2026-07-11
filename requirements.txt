@@ -66,6 +66,10 @@ lib32-nvidia-utils
 
 [intel]
 vulkan-intel
+lib32-mesa
+lib32-vulkan-intel
 
 [amd]
 vulkan-radeon
+lib32-mesa
+lib32-vulkan-radeon
