@@ -231,7 +231,7 @@ stow_wallpapers() {
     fi
 }
 
-generate_local_config() {
+generate_monitor_config() {
     local monitor_file="$DOTFILES/etc/greetd/monitors.lua"
     if [ ! -f "$monitor_file" ]; then
         log "Generating system monitor override file (monitors.lua)..."
@@ -259,7 +259,7 @@ main() {
     prompt_menu
     enable_multilib
     install_packages
-    generate_local_config
+    generate_monitor_config
     copy_etc
     stow_user
     stow_wallpapers
