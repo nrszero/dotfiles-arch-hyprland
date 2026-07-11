@@ -82,6 +82,14 @@ PopupWindow {
             // Header
             RowLayout {
                 Layout.fillWidth: true
+                
+                // Accent Pill
+                Rectangle {
+                    width: 4
+                    Layout.preferredHeight: 18 // Roughly matches the text height
+                    radius: 2
+                    color: theme.accent 
+                }
 
                 Text {
                     text: "Notifications"

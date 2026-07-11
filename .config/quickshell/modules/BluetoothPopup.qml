@@ -68,8 +68,19 @@ PopupWindow {
             anchors.margins: 12
             spacing: 8
             
+            // Header
             RowLayout {
                 Layout.fillWidth: true
+                Layout.bottomMargin: 8
+                spacing: 8
+
+                // Accent Pill
+                Rectangle {
+                    width: 4
+                    Layout.preferredHeight: 18 // Roughly matches the text height
+                    radius: 2
+                    color: theme.accent 
+                }
 
                 Text {
                     text: "Bluetooth"
@@ -77,9 +88,8 @@ PopupWindow {
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeMd
                     font.bold: true
+                    Layout.fillWidth: true
                 }
-
-                Item { Layout.fillWidth: true }
             }
 
             // Connected Devices Section
