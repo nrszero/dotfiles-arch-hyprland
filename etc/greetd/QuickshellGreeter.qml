@@ -506,22 +506,8 @@ ShellRoot {
             }
             
             // === PROCESS'S ===
-            Process {
-                id: ethDetector
-                command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
-                running: true
-            }
-
-            Process {
-                id: wifiDetector
-                command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
-                running: true
-            }
-
             NetworkWidget {
                 id: networkWidget
-                interfaceName: ethDetector.stdout ? ethDetector.stdout.trim() : "enp15s0"
-                wifiInterfaceName: wifiDetector.stdout ? wifiDetector.stdout.trim() : "wlp14s0"
             }
         }
     }

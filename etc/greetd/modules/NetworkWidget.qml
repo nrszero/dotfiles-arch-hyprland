@@ -27,6 +27,42 @@ Item {
     // Layout sizing - adopt the size of the icon text
     implicitWidth: 30
     implicitHeight: 30
+    
+    // -------------------------------------------------------------------------
+    // Backend Logic: Auto-Detect Interfaces
+    // -------------------------------------------------------------------------
+    Process {
+        id: ethDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep ethernet | head -n 1 | cut -d: -f1"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const eth = this.text.trim();
+                if (eth !== "") {
+                    root.interfaceName = eth;
+                    // Trigger an immediate check once found
+                    nmcliCmd.running = true;
+                }
+            }
+        }
+    }
+
+    Process {
+        id: wifiDetector
+        command: ["sh", "-c", "nmcli -t -f DEVICE,TYPE d | grep wifi | head -n 1 | cut -d: -f1"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const wifi = this.text.trim();
+                if (wifi !== "") {
+                    root.wifiInterfaceName = wifi;
+                    // Trigger immediate wifi checks once found
+                    wifiScanCmd.running = true;
+                    wifiActiveCmd.running = true;
+                }
+            }
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Backend Logic: Ethernet Polling
@@ -241,14 +277,20 @@ Item {
         running: true
         repeat: true
         triggeredOnStart: true // Update immediately on load
-        
+
         onTriggered: {
             // Only start if the previous process has finished.
             // This prevents a pile-up of zombie processes if nmcli hangs.
-            if (!nmcliCmd.running) nmcliCmd.running = true;
-            if (!wifiScanCmd.running) wifiScanCmd.running = true;
-            if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
-            if (!routeCheckCmd.running) routeCheckCmd.running = true;
+            if (root.interfaceName !== "" && !nmcliCmd.running) {
+                nmcliCmd.running = true;
+            }
+            if (root.wifiInterfaceName !== "") {
+                if (!wifiScanCmd.running) wifiScanCmd.running = true;
+                if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+            }
+            if (!routeCheckCmd.running) {
+                routeCheckCmd.running = true;
+            }
         }
     }
 }
