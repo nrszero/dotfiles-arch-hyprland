@@ -30,6 +30,8 @@ Managed with GNU Stow.
 
 - **OS**: Arch Linux
 - **Display Server**: Wayland
+- **Boot Loader**: GRUB 2
+- **Shell**: Bash
 - **Optional**: NVIDIA GPU (auto-detected and configured)
 
 ### Prerequisites
