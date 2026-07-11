@@ -136,7 +136,7 @@ hl.window_rule({
     },
     float = true,
     size = { 800, 350 },
-    move = { 10, 1070},
+    move = { 10, "(monitor_h - window_h - 10)"},
 })
 
 
