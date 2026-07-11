@@ -130,6 +130,17 @@ config_system() {
         sub_log "Non-NVIDIA GPU detected. Skipping proprietary sleep hooks."
     fi
     
+    # Bluetooth hardware detection
+    sub_log "Checking for Bluetooth hardware..."
+    if { command -v rfkill >/dev/null 2>&1 && rfkill list bluetooth | grep -iq "bluetooth"; } || \
+       { command -v lspci >/dev/null 2>&1 && lspci | grep -iq "bluetooth"; } || \
+       { command -v lsusb >/dev/null 2>&1 && lsusb | grep -iq "bluetooth"; }; then
+        sub_log "Bluetooth adapter detected. Enabling bluetooth.service..."
+        sudo systemctl enable bluetooth.service
+    else
+        sub_log "No Bluetooth adapter detected. Skipping bluetooth.service."
+    fi
+
     # Enable required services
     sub_log "Enabling greetd service..."
     sudo systemctl enable greetd.service
