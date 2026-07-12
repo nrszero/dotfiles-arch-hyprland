@@ -18,6 +18,14 @@ Rectangle {
     implicitWidth: 260
 
     property int currentIndex: 0
+    property int playerCount: Mpris.players.values.length
+    onPlayerCountChanged: {
+        if (playerCount === 0) {
+            currentIndex = 0
+        } else if (currentIndex >= playerCount) {
+            currentIndex = playerCount - 1
+        }
+    }
 
     signal clicked()
 
