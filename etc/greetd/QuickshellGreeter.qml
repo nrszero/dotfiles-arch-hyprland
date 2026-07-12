@@ -505,7 +505,7 @@ ShellRoot {
                 x: mainWin.width - width - 10
                 y: 50
                 width: 400
-                height: 200
+                height: 220
                 padding: 0
                 
                 // Bypasses Qt's default background styling completely
