@@ -11,7 +11,8 @@ PopupWindow {
     required property var theme
     property var adapter: Bluetooth.defaultAdapter
 
-    anchor.edges: Edges.Bottom
+    anchor.edges: Edges.Bottom | Edges.Right
+    anchor.margins.right: -6
     anchor.margins.top: 6
 
     implicitWidth: 400

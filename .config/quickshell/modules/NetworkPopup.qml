@@ -10,7 +10,8 @@ PopupWindow {
     required property var theme
     required property var networkWidget
 
-    anchor.edges: Edges.Bottom
+    anchor.edges: Edges.Bottom | Edges.Right
+    anchor.margins.right: -6
     anchor.margins.top: 6
 
     implicitWidth: 400

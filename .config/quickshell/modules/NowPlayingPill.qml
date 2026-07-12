@@ -19,94 +19,109 @@ Rectangle {
 
     property int currentIndex: 0
 
+    signal clicked()
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 6
         spacing: 10
-
-        // Small Album Art
-        Rectangle {
-            width: 24
-            height: 24
-            radius: 4
-            color: Qt.rgba(0, 0, 0, 0.3)
-            clip: true
-
-            Image {
-                anchors.fill: parent
-                source: Mpris.players.values[currentIndex]?.trackArtUrl || ""
-                fillMode: Image.PreserveAspectCrop
-                visible: status === Image.Ready
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: ""
-                font.family: theme.fontFace
-                font.pixelSize: 13
-                color: theme.subText
-                visible: parent.children[0].status !== Image.Ready
-            }
-        }
         
-        // Track Info
-        Item {
-            id: marqueeContainer
+        MouseArea {
             Layout.fillWidth: true
-            clip: true // Hides the overflowing text
-            implicitHeight: trackInfoRow.implicitHeight
+            Layout.fillHeight: true
+            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
+            onClicked: root.clicked()
+            
+            RowLayout {
+                anchors.fill: parent
+                spacing: 10
+                
+                // Small Album Art
+                Rectangle {
+                    width: 24
+                    height: 24
+                    radius: 4
+                    color: Qt.rgba(0, 0, 0, 0.3)
+                    clip: true
 
-            // Using a standard Row (not RowLayout) so it naturally stretches 
-            // to the full un-elided width of the text for us to measure.
-            Row {
-                id: trackInfoRow
-                spacing: 4
-
-                // Bold, bright track title
-                Text {
-                    text: Mpris.players.values[root.currentIndex]?.trackTitle || "Unknown Track"
-                    color: theme.text
-                    font.family: theme.fontFace
-                    font.pixelSize: theme.fontSizeSm
-                    font.bold: true
-                    
-                    // Reset scroll position instantly when the song changes
-                    onTextChanged: trackInfoRow.x = 0 
-                }
-
-                // Dimmed artist name
-                Text {
-                    text: Mpris.players.values[root.currentIndex]?.trackArtist ? "— " + Mpris.players.values[root.currentIndex].trackArtist : ""
-                    color: theme.subText 
-                    font.family: theme.fontFace
-                    font.pixelSize: theme.fontSizeSm
-                }
-
-                // The Marquee Animation
-                SequentialAnimation on x {
-                    id: marqueeAnim
-                    loops: Animation.Infinite
-                    
-                    // Only animate if the text is physically wider than the container
-                    running: trackInfoRow.implicitWidth > marqueeContainer.width && marqueeContainer.width > 0
-
-                    // Snap back to 0 if the animation stops (e.g., song changes to a short title)
-                    onRunningChanged: {
-                        if (!running) trackInfoRow.x = 0
+                    Image {
+                        anchors.fill: parent
+                        source: Mpris.players.values[currentIndex]?.trackArtUrl || ""
+                        fillMode: Image.PreserveAspectCrop
+                        visible: status === Image.Ready
                     }
 
-                    PauseAnimation { duration: 2000 } // Wait 2 seconds before scrolling
-                    
-                    NumberAnimation {
-                        from: 0
-                        to: marqueeContainer.width - trackInfoRow.implicitWidth
-                        // Dynamic speed: ~30ms per pixel of overflow so long titles don't scroll too fast
-                        duration: Math.max(0, trackInfoRow.implicitWidth - marqueeContainer.width) * 30
+                    Text {
+                        anchors.centerIn: parent
+                        text: ""
+                        font.family: theme.fontFace
+                        font.pixelSize: 13
+                        color: theme.subText
+                        visible: parent.children[0].status !== Image.Ready
                     }
-                    
-                    PauseAnimation { duration: 2000 } // Wait 2 seconds at the end
-                    
-                    PropertyAction { value: 0 } // Snap instantly back to the start
+                }
+                
+                // Track Info
+                Item {
+                    id: marqueeContainer
+                    Layout.fillWidth: true
+                    clip: true // Hides the overflowing text
+                    implicitHeight: trackInfoRow.implicitHeight
+
+                    // Using a standard Row (not RowLayout) so it naturally stretches 
+                    // to the full un-elided width of the text for us to measure.
+                    Row {
+                        id: trackInfoRow
+                        spacing: 4
+
+                        // Bold, bright track title
+                        Text {
+                            text: Mpris.players.values[root.currentIndex]?.trackTitle || "Unknown Track"
+                            color: theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
+                            
+                            // Reset scroll position instantly when the song changes
+                            onTextChanged: trackInfoRow.x = 0 
+                        }
+
+                        // Dimmed artist name
+                        Text {
+                            text: Mpris.players.values[root.currentIndex]?.trackArtist ? "— " + Mpris.players.values[root.currentIndex].trackArtist : ""
+                            color: theme.subText 
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                        }
+
+                        // The Marquee Animation
+                        SequentialAnimation on x {
+                            id: marqueeAnim
+                            loops: Animation.Infinite
+                            
+                            // Only animate if the text is physically wider than the container
+                            running: trackInfoRow.implicitWidth > marqueeContainer.width && marqueeContainer.width > 0
+
+                            // Snap back to 0 if the animation stops (e.g., song changes to a short title)
+                            onRunningChanged: {
+                                if (!running) trackInfoRow.x = 0
+                            }
+
+                            PauseAnimation { duration: 2000 } // Wait 2 seconds before scrolling
+                            
+                            NumberAnimation {
+                                from: 0
+                                to: marqueeContainer.width - trackInfoRow.implicitWidth
+                                // Dynamic speed: ~30ms per pixel of overflow so long titles don't scroll too fast
+                                duration: Math.max(0, trackInfoRow.implicitWidth - marqueeContainer.width) * 30
+                            }
+                            
+                            PauseAnimation { duration: 2000 } // Wait 2 seconds at the end
+                            
+                            PropertyAction { value: 0 } // Snap instantly back to the start
+                        }
+                    }
                 }
             }
         }

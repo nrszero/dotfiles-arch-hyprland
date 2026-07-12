@@ -10,6 +10,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.SystemTray
+import Quickshell.Services.Mpris
 
 PanelWindow {
     id: root
@@ -100,7 +101,8 @@ PanelWindow {
     function togglePopup(target) {
         let popups = [
             networkPopup, bluetoothPopup, volumePopup, 
-            powerButtonPopup, shortcutsPopup, calendarPopup, notifCenter
+            powerButtonPopup, shortcutsPopup, calendarPopup, notifCenter,
+            nowPlayingPopup
         ]
         
         for (let p of popups) {
@@ -204,7 +206,9 @@ PanelWindow {
 
             // Now Playing Pill (separate component)
             NowPlayingPill {
+                id: npPill
                 theme: root.theme
+                onClicked: root.togglePopup(nowPlayingPopup)
             }
         }
         
@@ -313,6 +317,7 @@ PanelWindow {
             spacing: theme.spacing
             
             BarModule {
+                id: rightBarMod
                 implicitWidth: statusRow.implicitWidth + 16
                 
                 RowLayout {
@@ -540,52 +545,61 @@ PanelWindow {
 
     }
  
-    // === POPUPS ===    
-    NetworkPopup {
-        id: networkPopup
-        anchor.item: networkIcon
-        theme: root.theme
-        networkWidget: networkWidget
-    }
-
-    BluetoothPopup {
-        id: bluetoothPopup
-        anchor.item: bluetoothIcon
-        theme: root.theme
-    }
-    
-    VolumePopup {
-        id: volumePopup
-        anchor.item: volumeIcon
-        theme: root.theme
-    }
-    
-    PowerButtonPopup {
-        id: powerButtonPopup
-        anchor.item: powerIcon
-        theme: root.theme
-    }
-    
-    ShortcutsPopup {
-        id: shortcutsPopup
-        anchor.item: shortcutsIcon
-        theme: root.theme
-    }
-    
+    // === POPUPS ===   
     CalendarPopup {
         id: calendarPopup
         anchor.item: timePillBox
         theme: root.theme
     }
-    
+    NowPlayingPopup {
+        id: nowPlayingPopup
+        anchor.item: npPill
+        theme: root.theme
+        currentIndex: npPill.currentIndex
+
+        // Catch the signal and safely rotate the Pill's index
+        onRequestPlayerChange: (step) => {
+            let len = Mpris.players.values.length;
+            if (len > 0) {
+                // The math ensures we loop cleanly backwards and forwards
+                npPill.currentIndex = (npPill.currentIndex + step + len) % len;
+            }
+        }
+    }
+    VolumePopup {
+        id: volumePopup
+        anchor.item: rightBarMod
+        theme: root.theme
+    }
+    NetworkPopup {
+        id: networkPopup
+        anchor.item: rightBarMod
+        theme: root.theme
+        networkWidget: networkWidget
+    }
+    BluetoothPopup {
+        id: bluetoothPopup
+        anchor.item: rightBarMod
+        theme: root.theme
+    }    
     NotificationCenter {
         id: notifCenter
-        anchor.item: notifBellIcon
+        anchor.item: rightBarMod
         notifModel: root.notifModel
         theme: root.theme
         dismissNotification: root.dismissNotification
     }
-
+    ShortcutsPopup {
+        id: shortcutsPopup
+        anchor.item: rightBarMod
+        theme: root.theme
+    }
+    PowerButtonPopup {
+        id: powerButtonPopup
+        anchor.item: rightBarMod
+        theme: root.theme
+    }
+    
     // === PROCESS'S ===
     NetworkWidget {
         id: networkWidget
