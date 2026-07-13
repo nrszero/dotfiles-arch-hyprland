@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTALLER=""
 
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 sub_log() { printf '\033[1;34m  ->\033[0m %s\n' "$*"; } # Use this inside functions
@@ -40,13 +41,27 @@ get_packages() {
 
 check_dependencies() {
     log "Checking prerequisites..."
-    local deps=("git" "stow" "yay")
+    local deps=("git" "stow")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
             warn "'$dep' is not installed. Please install it before running this script."
             exit 1
         fi
     done
+}
+
+check_installer() {
+    log "Checking for installer..."
+    if command -v "yay" >/dev/null 2>&1; then
+        INSTALLER="yay"
+        sub_log "Installer yay found!"
+    elif command -v "paru" >/dev/null 2>&1; then
+        INSTALLER="paru"
+        sub_log "Installer paru found!"
+    else
+        warn "Installer yay or paru not found. Please install one before running this script."
+        exit 1
+    fi
 }
 
 enable_multilib() {
@@ -82,8 +97,8 @@ install_packages() {
         req_pkgs+=("${full_pkgs[@]}")
     fi
 
-    # Pass the array to yay
-    yay -S --needed --noconfirm "${req_pkgs[@]}"
+    # Pass the array to yay or paru
+    "$INSTALLER" -S --needed --noconfirm "${req_pkgs[@]}"
 
     config_system
 
@@ -95,11 +110,11 @@ config_system() {
     if grep -qi "GenuineIntel" /proc/cpuinfo; then
         sub_log "Intel CPU detected. Installing Intel Vulkan drivers..."
         mapfile -t cpu_pkgs < <(get_packages "intel")
-        yay -S --needed --noconfirm "${cpu_pkgs[@]}"
+        "$INSTALLER" -S --needed --noconfirm "${cpu_pkgs[@]}"
     elif grep -qi "AuthenticAMD" /proc/cpuinfo; then
         sub_log "AMD CPU detected. Installing AMD Vulkan drivers..."
         mapfile -t cpu_pkgs < <(get_packages "amd")
-        yay -S --needed --noconfirm "${cpu_pkgs[@]}"
+        "$INSTALLER" -S --needed --noconfirm "${cpu_pkgs[@]}"
     else
         sub_log "Could not explicitly identify Intel or AMD CPU. Skipping specific Vulkan drivers."
     fi
@@ -110,7 +125,7 @@ config_system() {
 
         sub_log "Installing NVIDIA packages from requirements.txt"
         mapfile -t nvidia_pkgs < <(get_packages "nvidia")
-        yay -S --needed --noconfirm "${nvidia_pkgs[@]}"
+        "$INSTALLER" -S --needed --noconfirm "${nvidia_pkgs[@]}"
 
         sub_log "Enabling Wayland sleep services..."
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
@@ -267,6 +282,7 @@ main() {
     sudo -v
 
     check_dependencies
+    check_installer
     prompt_menu
     enable_multilib
     install_packages
@@ -277,7 +293,7 @@ main() {
     
     echo ""
     success "Dotfiles installed successfully!"
-    log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
+    sub_log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
 }
 
 main "$@"

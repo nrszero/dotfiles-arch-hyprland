@@ -35,13 +35,29 @@ Managed with GNU Stow.
 
 ### Prerequisites
 
-Install `git`, `base-devel`, `stow`, `yay` (AUR helper):
+Install `git`, `stow`, `yay or paru`:
+
+<details>
+<summary><b>Click to expand: Yay & Paru Installation Instructions</b></summary>
 
 ```bash
-pacman -S --needed --noconfirm git base-devel stow
-git clone https://aur.archlinux.org/yay.git
+# Install yay instructions
+sudo pacman -S --needed git base-devel
+cd ~/ && git clone https://aur.archlinux.org/yay.git
 cd yay
 makepkg -si
+
+# Install paru instructions
+sudo pacman -S --needed base-devel git
+cd ~/ && git clone https://aur.archlinux.org/paru.git
+cd paru
+makepkg -si
+```
+</details>
+<br>
+
+```bash
+pacman -S --needed --noconfirm git stow
 ```
 
 ### Quick Install
