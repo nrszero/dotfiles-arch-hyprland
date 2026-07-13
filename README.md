@@ -54,7 +54,6 @@ cd paru
 makepkg -si
 ```
 </details>
-<br>
 
 ```bash
 pacman -S --needed --noconfirm git stow
