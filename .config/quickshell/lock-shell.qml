@@ -96,10 +96,11 @@ ShellRoot {
                 }
             }
 
-            // Wait 300ms for Wayland to clear, then rebuild the UI
+            // Wait 1000ms for Wayland to clear, then rebuild the UI.
+            // 300ms was too fast for waking up from deep sleep
             Timer {
                 id: refreshTimer
-                interval: 300
+                interval: 1000
                 repeat: false
                 onTriggered: {
                     // Defensively check if the Wayland screen actually exists yet
