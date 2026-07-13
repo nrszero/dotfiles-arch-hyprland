@@ -75,10 +75,10 @@ When prompted, **choose option 1** to install all required packages.
 **Important**: You may need to adjust your monitor configuration before first login.
 
 Edit this file to match your display setup:
-- `~/dotfiles/etc/greetd/monitors.lua` - Global monitor configuration
+- `/etc/greetd/monitors.lua` - Global monitor configuration
+- Then run `hyprctl reload` to apply
 
-Then redeploy system configs:
-
+If you change files in ~/dotfiles/etc run install.sh again:
 ```bash
 # Option 1: Skip package installation
 SKIP_PACKAGES=1 ./install.sh
