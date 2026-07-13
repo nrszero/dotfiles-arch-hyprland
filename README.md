@@ -56,7 +56,7 @@ makepkg -si
 </details>
 
 ```bash
-pacman -S --needed --noconfirm git stow
+sudo pacman -S --needed --noconfirm git stow
 ```
 
 ### Quick Install
@@ -89,9 +89,11 @@ SKIP_PACKAGES=1 ./install.sh
 
 ### What the Install Script Does
 
-- Installs all required packages via pacman and yay
-- Auto-detects NVIDIA GPU and configures accordingly
+- Installs all required packages
 - Safely backs up any ~/.config files to a timestamped ~/.config.bak/ directory
+- Detects Intel or AMD CPUs to dynamically install the correct Vulkan drivers
+- Auto-detects NVIDIA GPU and configures accordingly
+- Scans for Bluetooth hardware and automatically enables bluetooth.service if found
 - Symlinks configurations to `~/.config` using stow
 - Deploys system-wide configs to `/etc` (requires sudo)
 - Installs wallpapers to `/usr/share/wallpapers`
