@@ -6,6 +6,7 @@ hypridle
 hyprshot
 greetd
 quickshell-git
+qml-language-server-bin
 kitty
 nvim
 yazi

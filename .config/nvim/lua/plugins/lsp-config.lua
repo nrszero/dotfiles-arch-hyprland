@@ -21,6 +21,11 @@ return {
         config = function()
             local capabilities = vim.lsp.protocol.make_client_capabilities()
             capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
+            -- Apply completion capabilities globally to ALL language servers
+            vim.lsp.config('*', {
+                capabilities = capabilities
+            })
+            
             local omnisharp_path = vim.fn.stdpath("data") .. "/mason/packages/omnisharp/libexec/OmniSharp.dll"
             -- This is required because OmniSharp needs to know where its DLL is
             vim.lsp.config('omnisharp', {
@@ -38,10 +43,12 @@ return {
                     },
                 },
             })
-            
-            vim.lsp.config('lua_ls', { capabilities = capabilities })
-            vim.lsp.config('pyright', { capabilities = capabilities })
-
+            vim.lsp.config("qml-language-server", {
+              cmd = { "qml-language-server" },
+              filetypes = { "qml" },
+              root_markers = { { "qmldir", "shell.qml" }, ".git" },
+            })
+            vim.lsp.enable("qml-language-server")
             vim.lsp.enable('lua_ls')
 	        vim.lsp.enable('pyright')
             vim.lsp.enable('omnisharp')
