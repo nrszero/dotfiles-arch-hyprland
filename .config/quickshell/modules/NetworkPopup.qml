@@ -189,10 +189,10 @@ PopupWindow {
                             radius: theme.radius
                         }
                         contentItem: Text {
-                            text: "Forget"
+                            text: ""
                             color: parent.parent.hovered ? theme.background : theme.text
                             font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
+                            font.pixelSize: theme.fontSizeMd
                         }
                         onClicked: networkWidget.forgetWifi()
                     }
@@ -204,10 +204,10 @@ PopupWindow {
                             radius: theme.radius
                         }
                         contentItem: Text {
-                            text: "Disconnect"
+                            text: "󰤭"
                             color: parent.parent.hovered ? theme.background : theme.text
                             font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
+                            font.pixelSize: theme.fontSizeMd
                         }
                         onClicked: networkWidget.disconnectWifi()
                     }
