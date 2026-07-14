@@ -6,15 +6,13 @@ Managed with GNU Stow.
 
 ## Features
 
-- **Hyprland** window manager with Lua configuration and per-monitor workspaces
-- **Quickshell** QML-based UI (Status Bar, Login Screen, and Lock Screen)
-  - Audio, Internet, Bluetooth, and Power widgets
-  - OLED-optimized with auto-hiding UI
-- **Wallpaper Slideshow** with custom keybinds using awww
-- **Display Manager** using greetd with Hyprland integration
-- **NVIDIA GPU Detection** - automatic GPU configuration (optional)
-- **Neovim** Lua-based editor configuration with LSP and plugins
-- **One-command Installation** with full automation
+- **Hyprland** built with new Lua configuration and per-monitor workspaces.
+- **Quickshell** QML-based UI (Status Bar, Login Screen, and Lock Screen).
+- **Wallpaper Slideshow** with custom keybinds using awww.
+- **Display Manager** using greetd with Hyprland integration.
+- **Hardware Detection** detects Intel or AMD CPUs to install Vulkan drivers, and configures NVIDIA GPUs.
+- **Neovim** Lua-based editor configuration with LSP and plugins.
+- **Simple Installation** just run the install.sh. 
 
 ## Screenshots
 
@@ -31,7 +29,6 @@ Managed with GNU Stow.
 - **OS**: Arch Linux
 - **Display Server**: Wayland
 - **Shell**: Bash
-- **Optional**: NVIDIA GPU (auto-detected and configured)
 
 ### Prerequisites
 
@@ -89,14 +86,14 @@ SKIP_PACKAGES=1 ./install.sh
 
 ### What the Install Script Does
 
-- Installs all required packages
-- Safely backs up any ~/.config files to a timestamped ~/.config.bak/ directory
-- Detects Intel or AMD CPUs to dynamically install the correct Vulkan drivers
-- Auto-detects NVIDIA GPU and configures accordingly
-- Scans for Bluetooth hardware and automatically enables bluetooth.service if found
-- Symlinks configurations to `~/.config` using stow
-- Deploys system-wide configs to `/etc` (requires sudo)
-- Installs wallpapers to `/usr/share/wallpapers`
+- Installs all required packages.
+- Safely backs up any ~/.config files to a timestamped ~/.config.bak/ directory.
+- Detects Intel or AMD CPUs to dynamically install the correct Vulkan drivers.
+- Auto-detects NVIDIA GPU and configures accordingly.
+- Scans for Bluetooth hardware and automatically enables bluetooth.service if found.
+- Symlinks configurations to `~/.config` using stow.
+- Deploys system-wide configs to `/etc` (requires sudo).
+- Installs wallpapers to `/usr/share/wallpapers`.
 
 ### Troubleshooting
 
@@ -106,24 +103,28 @@ chmod +x ~/dotfiles/install.sh
 ```
 
 **Greeter/Lock screen not loading**
-- Check monitor configuration in the post-install step above
-- Verify greetd service is enabled: `sudo systemctl enable greetd`
+- Check monitor configuration in the post-install step above.
+- Verify greetd service is enabled: `sudo systemctl enable greetd`.
 
 ## ⚙️ Configuration Highlights
 
 ### Hyprland (~/.config/hypr/)
-- Custom per-monitor workspace keybinds
-- Minimal animations
-- Wallpaper-responsive terminal and window colors
-- NVIDIA-specific optimizations (if applicable)
+- Built with new Lua configuration.
+- Custom per-monitor workspace keybinds.
+- Sleep and Screen Lock support.
+- Minimal animations and wallpaper-responsive terminal colors.
+- NVIDIA-specific optimizations.
+
+### Terminal & CLI Workflow
+- Terminal tools like yazi for file management, zoxide for smart directory navigation, fzf, and ripgrep.
 
 ### Neovim (~/.config/nvim/)
-- Plugin management
-- LSP configuration
-- Custom keymaps
-- Performance optimizations
+- Plugin management with lazy.nvim.
+- Includes Telescope for fuzzy finding and Oil.nvim for directory navigation.
+- Has LSP configuration with custom keymaps.
 
 ### Quickshell (~/.config/quickshell/)
-- Custom Status Bar, Login Screen, and Lock Screen
-- Status Bar widgets: Audio, Internet, Bluetooth, Power
-- OLED-optimized with auto-hiding UI
+- Implements the Wayland session lock protocol for a secure and custom lock screen.
+- Media and audio controls are integrated into Quickshell UI utilizing pipewire, wireplumber, and mpv-mpris
+- Dedicated widgets for controlling Media, Audio, Networks, Bluetooth, and Notifications.
+- Keybind `SUPER + Tab` to Auto-hide the UI.
