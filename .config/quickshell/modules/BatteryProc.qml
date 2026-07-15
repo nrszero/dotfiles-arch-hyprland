@@ -13,7 +13,7 @@ Item {
     Process {
         id: battProc
         // Try to read capacity and status. 2>/dev/null hides errors if file missing.
-        command: ["sh", "-c", "cat /sys/class/power_supply/BAT0/capacity 2>/dev/null; cat /sys/class/power_supply/BAT0/status 2>/dev/null"]
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -n 1; cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -n 1"]
         running: true // Run once on startup
         stdout: StdioCollector {
             onStreamFinished: {
