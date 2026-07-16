@@ -14,6 +14,12 @@ Managed with GNU Stow.
 - **Neovim** Lua-based editor configuration with LSP and plugins.
 - **Simple Installation** just run the install.sh. 
 
+## Video
+
+<video src="https://github.com/user-attachments/assets/a66a44c0-04b9-4aa5-84fc-1c2b23b1d1fe" width="100%" controls>
+  Your browser does not support the video tag.
+</video>
+
 ## Screenshots
 
 |                                 Status Bar & Blurred Windows                                  |                                       Rofi App Launcher                                       |
