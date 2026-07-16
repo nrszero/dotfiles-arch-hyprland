@@ -46,6 +46,7 @@ nwg-look
 gnome-themes-extra
 xdg-desktop-portal-hyprland
 wireless-regdb
+wf-recorder
 
 [full]
 steam

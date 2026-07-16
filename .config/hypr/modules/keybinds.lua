@@ -20,10 +20,12 @@ hl.bind(MAIN_MOD .. " + O", hl.dsp.layout("togglesplit"), { description = "Toggl
 hl.bind(MAIN_MOD .. " + F", hl.dsp.window.fullscreen(), { description = "Toggle fullscreen" })
 
 
--- Screenshots
+-- Screenshots and Recording
 hl.bind(MAIN_MOD .. " + PRINT", hl.dsp.exec_cmd("hyprshot -m window"), { description = "Screenshot active window" })
 hl.bind("PRINT", hl.dsp.exec_cmd("hyprshot -m output"), { description = "Screenshot entire monitor" })
 --hl.bind("$shiftMod" .. " + " .. "PRINT", hl.dsp.exec_cmd("hyprshot -m region"), { description = "Screenshot region" })
+hl.bind(MAIN_MOD .. "+ R", hl.dsp.exec_cmd('GEOM=$(slurp -o) && notify-send "Recording started" "Press SUPER + SHIFT + R to stop." -t 4000 2>/dev/null && wf-recorder -g "$GEOM" -f ~/Videos/recording.mp4'), {description = "Screen record (Select monitor)"})
+hl.bind(MAIN_MOD .. "+ SHIFT + R", hl.dsp.exec_cmd('killall -s SIGINT wf-recorder && notify-send "Recording saved!" "Saved to ~/Videos/recording.mp4" -t 4000 2>/dev/null'), {description = "Screen record stop"})
 
 -- Focus window
 hl.bind(MAIN_MOD .. " + H", hl.dsp.focus({ direction = "l" }), { description = "Focus left" })
