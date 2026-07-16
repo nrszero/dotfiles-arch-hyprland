@@ -65,9 +65,9 @@ sudo pacman -S --needed --noconfirm git stow
 ### Quick Install
 
 ```bash
-cd ~/
 git clone https://github.com/nrszero/dotfiles-arch-hyprland.git ~/dotfiles
 cd ~/dotfiles
+chmod +x ~/dotfiles/install.sh
 ./install.sh
 ```
 
@@ -103,12 +103,7 @@ SKIP_PACKAGES=1 ./install.sh
 
 ### Troubleshooting
 
-**"Permission denied" on install.sh**
-```bash
-chmod +x ~/dotfiles/install.sh
-```
-
-**Greeter/Lock screen not loading**
+**Greetd login screen not loading**
 - Check monitor configuration in the post-install step above.
 - Verify greetd service is enabled: `sudo systemctl enable greetd`.
 
