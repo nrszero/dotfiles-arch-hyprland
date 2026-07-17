@@ -291,7 +291,7 @@ PanelWindow {
                             Image {
                                 id: sysTrayIcon
                                 visible: modelData.icon !== ""
-                                anchors.centerIn: parent; width: 18; height: 18
+                                anchors.centerIn: parent; width: 22; height: 22
                                 source: modelData.icon; fillMode: Image.PreserveAspectFit
                             }
                             MouseArea {
