@@ -25,8 +25,11 @@ PanelWindow {
     property int totalWorkspaces: 6
     property var hMonitor: {
         if (!Hyprland.monitors || !Hyprland.monitors.values || !root.screenModel) return null;
+        // Guard: screenModel may temporarily be a placeholder during output changes.
+        const smName = root.screenModel && root.screenModel.name;
+        if (!smName || smName === "FALLBACK") return null;
         for (let m of Hyprland.monitors.values) {
-            if (m.name === root.screenModel.name) {
+            if (m.name === smName) {
                 return m;
             }    
         }

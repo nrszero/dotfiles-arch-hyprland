@@ -147,25 +147,33 @@ Scope {
                 id: wrapper
                 required property var modelData
 
-                NotificationPopup {
-                    screenModel: wrapper.modelData
-                    notifModel: sharedNotifList
-                    theme: appTheme
-                }
+                // Guard against placeholder / FALLBACK / empty screens that appear dpms
+                readonly property bool isRealScreen: !!(modelData && modelData.name && modelData.name !== "FALLBACK")
 
-                Bar {
-                    screenModel: wrapper.modelData
-                    theme: appTheme
-                    notifModel: sharedNotifList
-                    dismissNotification: shellRoot.dismissNotification
-                    barVisible: shellRoot.barsVisible
-                    
-                    onInteractionStarted: shellRoot.registerInteraction()
-                    onInteractionEnded: shellRoot.unregisterInteraction()
+                Loader {
+                    active: wrapper.isRealScreen
+                    sourceComponent: Item {
+                        NotificationPopup {
+                            screenModel: wrapper.modelData
+                            notifModel: sharedNotifList
+                            theme: appTheme
+                        }
 
-                    // Failsafe: Unregister if a monitor disconnects while hovered
-                    Component.onDestruction: {
-                        shellRoot.unregisterInteraction()
+                        Bar {
+                            screenModel: wrapper.modelData
+                            theme: appTheme
+                            notifModel: sharedNotifList
+                            dismissNotification: shellRoot.dismissNotification
+                            barVisible: shellRoot.barsVisible
+                            
+                            onInteractionStarted: shellRoot.registerInteraction()
+                            onInteractionEnded: shellRoot.unregisterInteraction()
+
+                            // Failsafe: Unregister if a monitor disconnects while hovered
+                            Component.onDestruction: {
+                                shellRoot.unregisterInteraction()
+                            }
+                        }
                     }
                 }
             }

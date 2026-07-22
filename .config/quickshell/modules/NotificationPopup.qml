@@ -19,8 +19,12 @@ PanelWindow {
     implicitWidth: 400
     implicitHeight: Math.min(root.screenModel ? root.screenModel.height : 1080, notifCol.implicitHeight + 20)
 
-    visible: (root.notifModel.count > 0) && 
-             (Hyprland.focusedMonitor.name === root.screenModel.name)
+    // Only show on the focused monitor, but guard against temporary FALLBACK / null states
+    readonly property bool isOnFocusedMonitor: {
+        const fm = Hyprland.focusedMonitor;
+        return !!(fm && fm.name && root.screenModel && fm.name === root.screenModel.name);
+    }
+    visible: (root.notifModel.count > 0) && root.isOnFocusedMonitor
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Overlay
     exclusionMode: ExclusionMode.Ignore 
