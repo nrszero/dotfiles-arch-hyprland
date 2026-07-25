@@ -39,7 +39,7 @@ end
 
 hl.env("XCURSOR_SIZE", 24)
 hl.env("HYPRCURSOR_SIZE", 24)
-hl.env("QT_QPA_PLATFORM", "wayland")
+hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
 hl.env("GTK_THEME", "Adwaita-dark")
 hl.env("EDITOR", "nvim")
