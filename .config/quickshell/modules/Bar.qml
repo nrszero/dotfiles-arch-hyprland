@@ -458,6 +458,7 @@ PanelWindow {
                     // Bluetooth
                     Text {
                         id: bluetoothIcon
+                        visible: Bluetooth.defaultAdapter
                         text: "󰂯"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl

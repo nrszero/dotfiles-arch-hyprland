@@ -52,6 +52,8 @@ PopupWindow {
             if (adapter) {
                 adapter.discovering = false;
                 adapter.discoverable = false;
+            } else {
+                console.warn("[BluetoothPopup] Adapter not found.")
             }
         }
     }
