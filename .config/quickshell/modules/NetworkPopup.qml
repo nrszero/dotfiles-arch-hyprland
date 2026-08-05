@@ -114,7 +114,7 @@ PopupWindow {
                 Layout.fillWidth: true
                 height: 40
                 color: theme.surface
-                radius: 4
+                radius: theme.radius
 
                 RowLayout {
                     anchors.fill: parent
@@ -148,7 +148,7 @@ PopupWindow {
                 Layout.fillWidth: true
                 height: 40
                 color: theme.surface // Subtle background for the active connection
-                radius: 4
+                radius: theme.radius
                 visible: networkWidget.currentWifiSsid !== ""
                 
                 RowLayout {
@@ -260,7 +260,7 @@ PopupWindow {
                     width: ListView.view.width
                     height: 36
                     color: root.selectedSsid === model.ssid ? theme.accent : "transparent"
-                    radius: 4
+                    radius: theme.radius
                     opacity: model.inUse ? 1.0 : 0.8
 
                     RowLayout {

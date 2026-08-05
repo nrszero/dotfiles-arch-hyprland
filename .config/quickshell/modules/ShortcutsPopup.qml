@@ -154,48 +154,35 @@ PopupWindow {
 
                 delegate: Rectangle {
                     width: ListView.view.width
-                    height: 44 // Slightly taller to fit the text comfortably
-                    color: "transparent"
-
+                    height: 40
+                    color: theme.surface
+                    radius: theme.radius
+                    
                     RowLayout {
                         anchors.fill: parent
-                        spacing: 12
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
 
                         // Left: The Keyboard Shortcut
-                        Rectangle {
-                            Layout.preferredHeight: 28
-                            Layout.preferredWidth: shortcutText.implicitWidth + 16
-                            color: theme.surface
-                            radius: 4
-                            border.color: theme.borderColor
-                            border.width: 1
-                            
-                            Text {
-                                id: shortcutText
-                                anchors.centerIn: parent
-                                text: model.triggerText
-                                color: theme.accent
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeSm
-                                font.bold: true
-                            }
+                        Text {
+                            id: shortcutText
+                            text: model.triggerText
+                            color: theme.accent
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
                         }
 
-                        // Right: Description
-                        ColumnLayout {
+                        // Displays Description (or dispatcher if no description)
+                        Text {
+                            text: model.mainTitle
+                            color: theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
+                            elide: Text.ElideRight
                             Layout.fillWidth: true
-                            spacing: 2
-                            
-                            // Displays Description (or dispatcher if no description)
-                            Text {
-                                text: model.mainTitle
-                                color: theme.text
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeSm
-                                font.bold: true
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                            }
                         }
                     }
                 }

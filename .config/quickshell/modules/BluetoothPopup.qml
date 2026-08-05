@@ -105,7 +105,7 @@ PopupWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: visible ? 40 : 0
                     color: theme.surface
-                    radius: 4
+                    radius: theme.radius
                     clip: true // Prevents contents from drawing when height is 0
 
                     RowLayout {
@@ -308,7 +308,7 @@ PopupWindow {
                                 width: parent.width
                                 height: 36
                                 color: "transparent"
-                                radius: 4
+                                radius: theme.radius
                                 opacity: 1.0
 
                                 RowLayout {
@@ -390,7 +390,7 @@ PopupWindow {
                                 width: parent.width
                                 height: 36 
                                 color: "transparent"
-                                radius: 4
+                                radius: theme.radius
                                 opacity: 0.7
 
                                 RowLayout {

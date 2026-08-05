@@ -136,7 +136,7 @@ PopupWindow {
 
                 // Volume Slider
                 Rectangle {
-                    Layout.fillWidth: true; height: 6; radius: 3
+                    Layout.fillWidth: true; height: 8; radius: theme.radius
                     color: Qt.darker(theme.surface, 1.5)
                     
                     Rectangle {
@@ -226,7 +226,7 @@ PopupWindow {
 
                 // Mic Slider
                 Rectangle {
-                    Layout.fillWidth: true; height: 6; radius: 3
+                    Layout.fillWidth: true; height: 8; radius: theme.radius
                     color: Qt.darker(theme.surface, 1.5)
                     
                     Rectangle {

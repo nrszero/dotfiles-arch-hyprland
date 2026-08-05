@@ -213,7 +213,7 @@ PopupWindow {
                     id: trackSlider
                     Layout.fillWidth: true
                     height: 8
-                    radius: 4
+                    radius: 3
                     color: Qt.darker(theme.surface, 1.5)
                     
                     // The filled portion
@@ -221,7 +221,7 @@ PopupWindow {
                         property double progress: (activePlayer && activePlayer.length > 0) ? (activePlayer.position / activePlayer.length) : 0
                         width: parent.width * Math.max(0, Math.min(1, progress))
                         height: parent.height
-                        radius: 4
+                        radius: 3
                         color: theme.accent
                     }
                     
