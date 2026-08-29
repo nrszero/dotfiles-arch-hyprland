@@ -16,11 +16,45 @@ ShellRoot {
         property bool unlockInProgress: false
         property bool showFailure: false
         property bool maxTries: false
-        
+        property bool screensBlanked: false
+        property bool blankInputArmed: false
+
         signal unlocked()
+
+        function poke() {
+            screensBlanked = false
+            blankInputArmed = false
+            blankTimer.restart()
+        }
+
+        function pokeIfArmed() {
+            if (screensBlanked && !blankInputArmed)
+                return
+            poke()
+        }
+
+        Timer {
+            id: blankTimer
+            interval: 150000
+            running: true
+            repeat: false
+            onTriggered: {
+                lockContext.screensBlanked = true
+                lockContext.blankInputArmed = false
+                blankArmTimer.restart()
+            }
+        }
+
+        Timer {
+            id: blankArmTimer
+            interval: 750
+            repeat: false
+            onTriggered: lockContext.blankInputArmed = true
+        }
         
         onCurrentTextChanged: {
             showFailure = false
+            poke()
         }
 
         function tryUnlock() {
@@ -73,48 +107,27 @@ ShellRoot {
 
         WlSessionLockSurface {
             id: lockSurface
-            
-            property bool isArmed: true
-            
+
+            property bool wakeArmed: false
+
             Timer {
-                interval: 2000
+                interval: 3000
                 running: true
                 repeat: false
-                onTriggered: lockSurface.isArmed = true
+                onTriggered: lockSurface.wakeArmed = true
             }
 
-            // Listen for the wake signal from hypridle
             FileView {
                 path: "/var/tmp/qs-wake"
                 watchChanges: true
                 onTextChanged: {
-                    if (!lockSurface.isArmed) return;
-
-                    console.log("[Quickshell] Hardware wake detected, forcing VRAM refresh...")
-                    uiLoader.active = false
-                    refreshTimer.restart()
+                    if (!lockSurface.wakeArmed)
+                        return
+                    if (uiLoader.item && uiLoader.item.refreshAfterWake)
+                        uiLoader.item.refreshAfterWake()
                 }
             }
 
-            // Wait 1000ms for Wayland to clear, then rebuild the UI.
-            // 300ms was too fast for waking up from deep sleep
-            Timer {
-                id: refreshTimer
-                interval: 1000
-                repeat: false
-                onTriggered: {
-                    // Defensively check if the Wayland screen actually exists yet
-                    if (lockSurface.screen && lockSurface.screen.name !== "") {
-                        console.log("[Quickshell] Screen is valid (" + lockSurface.screen.name + "), rebuilding UI.")
-                        uiLoader.active = true
-                    } else {
-                        console.log("[Quickshell] Screen not ready yet, delaying VRAM refresh...")
-                        // If the screen isn't ready, loop the timer until it is
-                        refreshTimer.start() 
-                    }
-                }
-            }
-            
             Rectangle {
                 anchors.fill: parent
                 color: "black"
@@ -133,6 +146,28 @@ ShellRoot {
                 anchors.fill: parent
                 active: true
                 sourceComponent: lockUIComponent
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: "#000000"
+                visible: lockContext.screensBlanked
+                z: 1000
+
+                onVisibleChanged: if (visible) forceActiveFocus()
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.BlankCursor
+                    onPressed: lockContext.poke()
+                    onPositionChanged: lockContext.pokeIfArmed()
+                }
+
+                Keys.onPressed: (event) => {
+                    lockContext.poke()
+                    event.accepted = true
+                }
             }
         }
     }

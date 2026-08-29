@@ -78,11 +78,23 @@ Item {
         }
     }
 
+    readonly property bool screenValid: !!(targetScreen && targetScreen.name && targetScreen.name !== "" && targetScreen.name !== "FALLBACK")
+
     // Strict: True ONLY when Wayland confirms this is definitely the main screen
-    property bool isMain: !!(targetScreen && targetScreen.x === 0)
+    readonly property bool isMain: !!(screenValid && targetScreen && targetScreen.x === 0)
     
     // Tracks if the user has dismissed the cover
     property bool isInputReady: false
+
+    function refreshAfterWake() {
+        if (!screenValid) {
+            console.log("[LockScreen] Ignoring wake refresh, screen is not a real output")
+            return
+        }
+        console.log("[LockScreen] Reloading wallpaper after wake on", targetScreen.name)
+        wallpaper.source = ""
+        wallpaper.source = isMain ? "file:///var/tmp/greeter-wallpaper" : ""
+    }
     
     function togglePopup(target) {
         let popups = [
@@ -96,23 +108,24 @@ Item {
     }
 
     onIsMainChanged: {
-        // Use the native Hyprland module to dispatch the command
-        if (isMain && targetScreen && targetScreen.name) {
-            console.log("[LockScreen] Screen recognized, starting 250ms warp delay...")
+        if (isMain)
             warpTimer.restart()
-        }
+        else
+            warpTimer.stop()
     }
 
-    // Delayed timer to let hardware interrupts and DPMS settle before warping the mouse
     Timer {
         id: warpTimer
-        interval: 250 // 250 milliseconds
+        interval: 250
         repeat: false
         onTriggered: {
-            if (isMain && targetScreen && targetScreen.name) {
-                console.log("[LockScreen] Delayed warp firing for monitor:", targetScreen.name)
-                Hyprland.dispatch(`hl.dsp.focus({ monitor = "${targetScreen.name}" })`)
-            }
+            if (!isMain || !screenValid)
+                return
+            const name = targetScreen.name
+            if (!name || name === "FALLBACK")
+                return
+            console.log("[LockScreen] Delayed warp firing for monitor:", name)
+            Hyprland.dispatch(`hl.dsp.focus({ monitor = "${name}" })`)
         }
     }
         
@@ -168,7 +181,7 @@ Item {
         // Auto-focus intelligently targets the cover or the input
         Timer {
             interval: 500
-            running: isMain && content.visible
+            running: isMain && content.visible && !context.screensBlanked
             repeat: true
             onTriggered: {
                 if (content.visible) {
@@ -397,7 +410,8 @@ Item {
             Keys.onPressed: (event) => {
                 console.log("[LockScreen] Cover dismissed via keyboard.")
                 isInputReady = true
-                event.accepted = true // Prevent the corrupted modifier state from passing through
+                context.poke()
+                event.accepted = true
             }
         }
 
@@ -525,5 +539,25 @@ Item {
     // === PROCESS'S ===
     NetworkWidget {
         id: networkWidget
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        visible: context.screensBlanked
+        z: 10000
+
+        onVisibleChanged: {
+            if (visible)
+                lockPowerButtonPopup.visible = false
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.BlankCursor
+            onPressed: context.poke()
+            onPositionChanged: context.pokeIfArmed()
+        }
     }
 }
