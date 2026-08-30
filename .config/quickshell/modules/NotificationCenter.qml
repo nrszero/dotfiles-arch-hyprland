@@ -253,8 +253,10 @@ PopupWindow {
                             textFormat: Text.RichText
                             color: theme.subText
                             linkColor: theme.accent
-                            wrapMode: Text.Wrap
+                            wrapMode: Text.WrapAnywhere
                             Layout.fillWidth: true
+                            Layout.preferredWidth: 0
+                            clip: true
                             font.pixelSize: theme.fontSizeSm
                             elide: Text.ElideRight
                             maximumLineCount: 2

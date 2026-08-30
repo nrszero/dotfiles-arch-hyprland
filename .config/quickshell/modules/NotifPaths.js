@@ -11,9 +11,10 @@ function resolve(path, home) {
     return p
 }
 
-function linkify(text, home) {
+function linkify(text, home, maxPathLen) {
     if (!text)
         return ""
+    const limit = maxPathLen || 42
 
     return String(text).replace(/(?:file:\/\/|~\/|\/)[^\s<&]+/g, function(match, offset, full) {
         const before = full.slice(0, offset)
@@ -31,6 +32,9 @@ function linkify(text, home) {
         const abs = resolve(display, home)
         if (!abs)
             return match
-        return '<a href="file://' + abs + '">' + display + "</a>" + trail
+        let label = display
+        if (label.length > limit)
+            label = label.slice(0, limit - 3) + "..."
+        return '<a href="file://' + abs + '">' + label + "</a>" + trail
     })
 }

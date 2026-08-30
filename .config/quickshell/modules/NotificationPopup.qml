@@ -1,6 +1,5 @@
 import Quickshell
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import QtCore
 import Quickshell.Wayland
@@ -34,7 +33,10 @@ PanelWindow {
     Flickable {
         id: scrollArea
         anchors.fill: parent
-        anchors.margins: 10
+        anchors.topMargin: 10
+        anchors.bottomMargin: 10
+        anchors.leftMargin: 18
+        anchors.rightMargin: 18
         contentHeight: notifCol.implicitHeight
         interactive: contentHeight > height
         clip: true // Ensure text doesn't flow outside the window bounds
@@ -53,91 +55,85 @@ PanelWindow {
 
                     Layout.fillWidth: true
                     visible: model.popupVisible
-                    Layout.preferredHeight: model.popupVisible ? (contentCol.implicitHeight + 20) : 0
+                    Layout.preferredHeight: model.popupVisible ? 78 : 0
                     Behavior on Layout.preferredHeight {NumberAnimation {duration: 200}}
-                    
-                    color: theme.background
-                    radius: theme.radius
 
+                    color: theme.surface
+                    radius: theme.radius - 2
+                    border.width: 1
+                    border.color: Qt.rgba(1,1,1, 0.05)
                     enabled: model.popupVisible
 
                     ColumnLayout {
                         id: contentCol
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 10
-
+                        anchors.margins: 10
+                        spacing: 4
                         visible: delegateRect.height > 10
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 10
-                            
-                            // Icon
+                            spacing: 8
+
                             Image {
                                 id: notifIcon
                                 visible: model.icon !== ""
-                                Layout.leftMargin: 5
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
                                 source: model.icon.toString().startsWith("/") ? "file://" + model.icon : model.icon
-                                Layout.preferredWidth: 32; Layout.preferredHeight: 32
-                                fillMode: Image.PreserveAspectFit                                
-                                cache: true // DO NOT CHANGE!
+                                fillMode: Image.PreserveAspectFit
+                                cache: true
                                 asynchronous: true
 
-                                // Optional: Add a fallback text if the image fails to load
                                 Text {
-                                    anchors.centerIn: parent 
+                                    anchors.centerIn: parent
                                     text: "🛈"
                                     color: theme.urgent
                                     visible: parent.status === Image.Error || parent.status === Image.Null
-                                } 
+                                }
                             }
 
-                            // Title
                             Text {
-                                text: model.summary 
+                                text: model.summary || "Notification"
                                 font.bold: true
-                                font.pixelSize: 14
+                                font.pixelSize: theme.fontSizeMd
                                 color: theme.text
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
 
-                            // Close Button
-                            Button {
-                                background: Rectangle { 
-                                    color: "transparent"
-                                    
-                                    MouseArea {
-                                        id: dismissMouse
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        hoverEnabled: true
-                                        acceptedButtons: Qt.NoButton
-                                    }
+                            Text {
+                                text: model.time || ""
+                                font.pixelSize: theme.fontSizeSm
+                                color: theme.subText
+                            }
+
+                            Text {
+                                text: "✕"
+                                color: theme.urgent
+                                font.pixelSize: 14
+                                font.bold: true
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: shellRoot.dismissNotification(index)
                                 }
-
-                                contentItem: Text { text: "✕"; color: theme.urgent; font.bold: true }
-                                // Remove from the shared list by index
-                                onClicked: {
-                                    shellRoot.dismissNotification(index)
-                                    //root.notifModel.remove(index)
-
-                                }                                
                             }
                         }
 
                         Text {
                             text: NotifPaths.linkify(model.body, StandardPaths.writableLocation(StandardPaths.HomeLocation))
                             textFormat: Text.RichText
-                            color: theme.text
+                            color: theme.subText
                             linkColor: theme.accent
-                            wrapMode: Text.Wrap
+                            wrapMode: Text.WrapAnywhere
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            font.pixelSize: 12
+                            Layout.preferredWidth: 0
+                            clip: true
+                            font.pixelSize: theme.fontSizeSm
                             elide: Text.ElideRight
-                            maximumLineCount: 3
+                            maximumLineCount: 2
                             visible: model.body !== ""
                             onLinkActivated: (link) => {
                                 const path = NotifPaths.resolve(link, StandardPaths.writableLocation(StandardPaths.HomeLocation))
