@@ -8,7 +8,7 @@ greetd
 quickshell-git
 qml-language-server-bin
 kitty
-nvim
+neovim
 yazi
 fastfetch
 btop
