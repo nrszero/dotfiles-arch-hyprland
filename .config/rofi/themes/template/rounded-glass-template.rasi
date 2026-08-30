@@ -16,9 +16,9 @@ window {
     location:       north;
     y-offset:       calc(50% - 176px);
     width:          600px;
-    border:         1px;
+    border:         2px;
     border-radius:  12px;
-    /*border-color:   @bg1;*/
+    border-color:   @border;
 
     background-color:   @bg0;
 }
@@ -29,9 +29,9 @@ mainbox {
 
 inputbar {
     background-color:   @bg0;
-    border-color:       @bg1;
+    border-color:       @border;
 
-    border:         1px;
+    border:         2px;
     border-radius:  12px;
 
     padding:    8px 16px;

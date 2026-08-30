@@ -82,8 +82,8 @@ PanelWindow {
                 height: Math.round(width * monH / monW)
                 radius: theme.radius
                 color: theme.background
-                border.width: (isActive || hovered) ? 2 : 1
-                border.color: isActive ? theme.accent : (hovered ? theme.text : Qt.rgba(1, 1, 1, 0.18))
+                border.width: theme.borderWidth
+                border.color: isActive ? theme.accent : (hovered ? theme.text : theme.borderColor)
 
                 Behavior on border.color { ColorAnimation { duration: 120 } }
 
@@ -151,8 +151,8 @@ PanelWindow {
                     height: 22
                     radius: theme.radius
                     color: card.isActive ? theme.accent : (card.hasWindows ? theme.surface : Qt.rgba(0, 0, 0, 0.45))
-                    border.width: (card.isActive || card.hasWindows) ? 0 : 1
-                    border.color: Qt.rgba(1, 1, 1, 0.12)
+                    border.width: (card.isActive || card.hasWindows) ? 0 : theme.borderWidth
+                    border.color: theme.borderColor
 
                     Text {
                         anchors.centerIn: parent

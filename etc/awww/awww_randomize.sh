@@ -121,24 +121,27 @@ while true; do
 			cat << EOF > "$HOME/.cache/wal/colors.lua"
 return {
     color0 = "${color0}",
+    color2 = "${color2}",
+    color6 = "${color6}",
     color8 = "${color8}",
     color9 = "${color9}",
     color10 = "${color10}",
     color12 = "${color12}"
 }
 EOF
-			# Generate Rofi colors
+			# Generate Rofi colors to match Quickshell Theme.qml
 			cat << EOF > "$HOME/.cache/wal/colors-rounded-glass.rasi"
 * {
-    bg0:    ${color0}33;
-    bg1:    ${color10}cc;
+    bg0:    ${background}33;
+    bg1:    ${color2}cc;
     bg2:    ${color0}33;
     bg3:    ${color0}33;
     bg4:    ${color0}33;
-    fg0:    ${color15}cc;
-    fg1:    ${color15}cc;
-    fg2:    ${color15}cc;
-    fg3:    ${color15}cc;
+    fg0:    ${foreground}cc;
+    fg1:    ${foreground}cc;
+    fg2:    ${foreground}cc;
+    fg3:    ${foreground}cc;
+    border: ${color6}33;
 }
 EOF
 			# Atomic JSON Backup

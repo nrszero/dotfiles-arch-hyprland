@@ -2,8 +2,8 @@
 local home = os.getenv("HOME")
 
 -- Fallback defaults (used if the file is missing or environment is broken)
-local active_colors = {"rgba(5e81accc)", "rgba(5e81accc)"}
-local inactive_colors = {"rgba(595959aa)"}
+local active_colors = {"rgb(5e81ac)"}
+local inactive_colors = {"rgba(88c0d033)"}
 
 if home then
     -- Construct the dynamic path
@@ -16,9 +16,9 @@ if home then
         local pywal = load_colors()
 
         -- Ensure the table actually contains data before applying
-        if pywal and pywal.color10 then
-            active_colors = {"rgb(" .. pywal.color8:sub(2) .. ")"}
-            inactive_colors = {"rgba(" .. pywal.color0:sub(2) .. "aa)"}
+        if pywal and pywal.color2 and pywal.color6 then
+            active_colors = {"rgb(" .. pywal.color2:sub(2) .. ")"}
+            inactive_colors = {"rgba(" .. pywal.color6:sub(2) .. "33)"}
         end
     else
         print("[Appearance] Pywal colors.lua failed to load from " .. wal_path .. ": " .. tostring(err))
@@ -31,7 +31,7 @@ hl.config({
     general = {
         gaps_in = 5,
         gaps_out = 10,
-        border_size = 1,
+        border_size = 2,
         col = {
             active_border = { colors = active_colors },
             inactive_border = { colors = inactive_colors },

@@ -19,13 +19,13 @@ Item {
         property color accent:     "#5e81ac"   // Cyan/Blue accent
         property color urgent:     "#bf616a"   // Red for errors/power
         property color success:    "#a3be8c"   // Green
-        property color borderColor: "#3388c0d0" // Subtle border for glass look
+        property color borderColor: "#1a88c0d0" // Subtle border for glass look
 
         // --- GEOMETRY ---
         property int radius: 12        // A bit sharper looks more "tech" than 15
         property int spacing: 10
         property int padding: 12
-        property int borderWidth: 0
+        property int borderWidth: 2
 
         // --- FONTS ---
         property string fontFace: "JetBrainsMono Nerd Font"
@@ -50,15 +50,6 @@ Item {
             try {
                 let pywal = JSON.parse(text())
 
-                // Map Pywal colors to your theme properties
-                theme.text    = pywal.special.foreground
-                theme.subText = pywal.colors.color7
-                theme.accent  = pywal.colors.color3
-                theme.urgent  = pywal.colors.color1
-                theme.success = pywal.colors.color2
-                theme.borderColor = pywal.colors.color10
-                
-                // Helper function to parse Pywal's "#RRGGBB" format and apply custom opacity
                 let parseHex = function(hexStr, alpha) {
                     let r = parseInt(hexStr.slice(1, 3), 16) / 255.0
                     let g = parseInt(hexStr.slice(3, 5), 16) / 255.0
@@ -66,9 +57,14 @@ Item {
                     return Qt.rgba(r, g, b, alpha)
                 }
 
-                // Apply colors with your desired transparency
-                theme.background = parseHex(pywal.special.background, 0.60) // 60% opacity
-                theme.surface    = parseHex(pywal.colors.color0, 0.80)      // 80% opacity because no blur
+                theme.text    = pywal.special.foreground
+                theme.subText = pywal.special.foreground
+                theme.accent  = pywal.colors.color2
+                theme.urgent  = pywal.colors.color2
+                theme.success = pywal.colors.color2
+                theme.borderColor = parseHex(pywal.colors.color6, 0.20)
+                theme.background = parseHex(pywal.special.background, 0.60)
+                theme.surface    = parseHex(pywal.colors.color0, 0.80)
 
             } catch(e) {
                 console.log("[LockScreen Theme] Failed to parse Pywal colors.json", e)
