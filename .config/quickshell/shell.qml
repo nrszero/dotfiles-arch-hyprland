@@ -107,6 +107,31 @@ Scope {
         }
     }
 
+    property bool workspacePreviewVisible: false
+
+    function setWorkspacePreview(on) {
+        workspacePreviewVisible = on
+        if (on) {
+            Hyprland.refreshToplevels()
+            Hyprland.refreshWorkspaces()
+            Hyprland.refreshMonitors()
+            if (!persistentBarsVisible) {
+                temporaryBarVisible = true
+                barPeekTimer.stop()
+            }
+        } else if (!persistentBarsVisible && activeInteractions === 0) {
+            barPeekTimer.restart()
+        }
+    }
+
+    GlobalShortcut {
+        name: "workspacePreview"
+        onPressedChanged: {
+            if (pressed)
+                shellRoot.setWorkspacePreview(!shellRoot.workspacePreviewVisible)
+        }
+    }
+
     GlobalShortcut {
         name: "toggleBar"
         onPressedChanged: {
@@ -157,6 +182,13 @@ Scope {
                             screenModel: wrapper.modelData
                             notifModel: sharedNotifList
                             theme: appTheme
+                        }
+
+                        WorkspacePreview {
+                            screenModel: wrapper.modelData
+                            theme: appTheme
+                            previewVisible: shellRoot.workspacePreviewVisible
+                            barVisible: shellRoot.barsVisible
                         }
 
                         Bar {

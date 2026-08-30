@@ -15,6 +15,7 @@ Item {
     property color urgent:     "#bf616a"   // Red for errors/power
     property color success:    "#a3be8c"   // Green
     property color borderColor: "#3388c0d0" // Subtle border for glass look
+    property url wallpaper: ""
 
     // --- GEOMETRY ---
     property int radius: 12        // A bit sharper looks more "tech" than 15
@@ -64,6 +65,7 @@ Item {
                 // Apply colors with your desired transparency
                 theme.background = parseHex(pywal.special.background, 0.20) // 20% opacity
                 theme.surface    = parseHex(pywal.colors.color0, 0.40)      // 40% opacity
+                theme.wallpaper  = pywal.wallpaper ? ("file://" + pywal.wallpaper) : ""
                 
             } catch(e) {
                 console.log("[Theme] Failed to parse Pywal colors.json", e)

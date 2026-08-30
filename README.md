@@ -7,7 +7,7 @@ Managed with GNU Stow.
 ## Features
 
 - **Hyprland** built with new Lua configuration and per-monitor workspaces.
-- **Quickshell** QML-based UI (Status Bar, Login Screen, and Lock Screen).
+- **Quickshell** QML-based UI (Status Bar, Login Screen, Lock Screen, and Workspace Preview).
 - **Wallpaper Slideshow** with custom keybinds using awww.
 - **Display Manager** using greetd with Hyprland integration.
 - **Hardware Detection** detects Intel or AMD CPUs to install Vulkan drivers, and configures NVIDIA GPUs.
@@ -128,4 +128,5 @@ SKIP_PACKAGES=1 ./install.sh
 - Implements the Wayland session lock protocol for a secure and custom lock screen.
 - Media and audio controls are integrated into Quickshell UI utilizing pipewire, wireplumber, and mpv-mpris
 - Dedicated widgets for controlling Media, Audio, Networks, Bluetooth, and Notifications.
-- Keybind `SUPER + Tab` to Auto-hide the UI.
+- Keybind `SUPER + B` to auto-hide the status bar.
+- Keybind `SUPER + Tab` to preview workspaces.
