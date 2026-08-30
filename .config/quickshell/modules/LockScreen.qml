@@ -519,7 +519,7 @@ Item {
         x: root.width - width - 10
         y: 50
         width: 400
-        height: 320
+        height: 360
         padding: 0
 
         background: Rectangle { color: "transparent" }

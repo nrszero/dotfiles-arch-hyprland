@@ -15,7 +15,9 @@ Rectangle {
     border.color: theme.borderColor
     
     ColumnLayout {
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: 12
         spacing: 8
         
@@ -46,16 +48,18 @@ Rectangle {
         // Button List
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 6
             
             // Lock
             Button {
                 id: lockBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 52
                 background: Rectangle {
-                    color: lockBtn.hovered ? theme.accent : theme.surface
+                    color: lockBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: lockBtn.hovered ? theme.accent : "transparent"
                 }
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -66,7 +70,7 @@ Rectangle {
                     Text { 
                         text: "󰌾" // Lock icon
                         font.family: theme.fontFace
-                        font.pixelSize: 20
+                        font.pixelSize: theme.fontSizeXl
                         color: theme.text
                     }
                     Text { 
@@ -88,10 +92,12 @@ Rectangle {
             Button {
                 id: logoutBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 52
                 background: Rectangle {
-                    color: logoutBtn.hovered ? theme.accent : theme.surface
+                    color: logoutBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: logoutBtn.hovered ? theme.accent : "transparent"
                 }
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -102,7 +108,7 @@ Rectangle {
                     Text { 
                         text: "󰍃" // Logout icon
                         font.family: theme.fontFace 
-                        font.pixelSize: 20 
+                        font.pixelSize: theme.fontSizeXl 
                         color: theme.text 
                     }
                     Text { 
@@ -123,10 +129,12 @@ Rectangle {
             Button {
                 id: suspendBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 52
                 background: Rectangle {
-                    color: parent.hovered ? theme.accent : theme.surface
+                    color: suspendBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: suspendBtn.hovered ? theme.accent : "transparent"
                 }
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -137,7 +145,7 @@ Rectangle {
                     Text { 
                         text: "󰤄"
                         font.family: theme.fontFace
-                        font.pixelSize: 20
+                        font.pixelSize: theme.fontSizeXl
                         color: theme.text
                     }
                     Text { 
@@ -158,10 +166,12 @@ Rectangle {
             Button {
                 id: rebootBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 52
                 background: Rectangle {
-                    color: parent.hovered ? theme.accent : theme.surface
+                    color: rebootBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: rebootBtn.hovered ? theme.accent : "transparent"
                 }
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -172,7 +182,7 @@ Rectangle {
                     Text { 
                         text: "󰜉"
                         font.family: theme.fontFace 
-                        font.pixelSize: 20 
+                        font.pixelSize: theme.fontSizeXl 
                         color: theme.text
                     }
                     Text { 
@@ -193,10 +203,12 @@ Rectangle {
             Button {
                 id: shutdownBtn
                 Layout.fillWidth: true
-                Layout.preferredHeight: 44
+                Layout.preferredHeight: 52
                 background: Rectangle {
-                    color: parent.hovered ? theme.accent : theme.surface
+                    color: shutdownBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: shutdownBtn.hovered ? theme.accent : "transparent"
                 }
                 contentItem: RowLayout {
                     anchors.fill: parent
@@ -205,9 +217,9 @@ Rectangle {
                     spacing: 16
 
                     Text { 
-                        text: "⏻"
+                        text: "󰐥"
                         font.family: theme.fontFace 
-                        font.pixelSize: 20 
+                        font.pixelSize: theme.fontSizeXl 
                         color: theme.text 
                     }
                     Text { 

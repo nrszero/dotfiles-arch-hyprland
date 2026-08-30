@@ -18,7 +18,7 @@ PopupWindow {
     implicitHeight: 450
     visible: false
     color: "transparent"
-    grabFocus: true
+    grabFocus: selectedSsid !== "" && requiresPassword
 
     HoverHandler { id: popupHover }
     
@@ -53,6 +53,43 @@ PopupWindow {
         if (signal > 40) return "󰤢"; // Fair
         if (signal > 20) return "󰤟"; // Weak
         return "󰤯"; // None
+    }
+
+    function signalLabel(signal) {
+        if (signal > 80) return "Excellent"
+        if (signal > 60) return "Good"
+        if (signal > 40) return "Fair"
+        if (signal > 20) return "Weak"
+        return "No signal"
+    }
+
+    function wifiDetails(ssid, signal, security, inUse) {
+        const parts = []
+        if (inUse && ssid === networkWidget.currentWifiSsid)
+            parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
+        if (networkWidget.isSavedWifi(ssid))
+            parts.push("Saved")
+        parts.push(!security || security === "--" ? "Open" : security)
+        parts.push(signalLabel(signal))
+        return parts.join(" · ")
+    }
+
+    function ethernetDetails() {
+        if (networkWidget.connectionState === 1)
+            return "Connected · Wired"
+        if (networkWidget.connectionState === 2)
+            return "Connecting · Wired"
+        return "Disconnected · Wired"
+    }
+
+    function activeWifiDetails() {
+        const parts = []
+        parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
+        if (networkWidget.isSavedWifi(networkWidget.currentWifiSsid))
+            parts.push("Saved")
+        if (networkWidget.currentWifiSignal > 0)
+            parts.push(signalLabel(networkWidget.currentWifiSignal))
+        return parts.join(" · ")
     }
 
     Connections {
@@ -112,104 +149,123 @@ PopupWindow {
             // Current Ethernet connection state
             Rectangle {
                 Layout.fillWidth: true
-                height: 40
+                height: 52
                 color: theme.surface
                 radius: theme.radius
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    spacing: 8
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
 
                     Text {
-                        text: "󰈀 Ethernet"
+                        text: "󰈀"
                         font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeMd
+                        font.pixelSize: theme.fontSizeXl
                         color: networkWidget.connectionState === 1 ? theme.accent :
                                networkWidget.connectionState === 2 ? theme.urgent : theme.text
                     }
 
-                    Text {
-                        text: networkWidget.connectionState === 1 ? "(Connected)" :
-                              networkWidget.connectionState === 2 ? "(Connecting...)" : "(Disconnected)"
-                        color: theme.subText
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeSm
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            text: "Ethernet"
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
+                            color: networkWidget.connectionState === 1 ? theme.accent :
+                                   networkWidget.connectionState === 2 ? theme.urgent : theme.text
+                        }
+
+                        Text {
+                            text: ethernetDetails()
+                            color: theme.subText
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
                     }
-
-                    Item { Layout.fillWidth: true }
-
                 }
             }
    
             // Active Wi-Fi Connection
             Rectangle {
                 Layout.fillWidth: true
-                height: 40
-                color: theme.surface // Subtle background for the active connection
+                height: 52
+                color: theme.surface
                 radius: theme.radius
                 visible: networkWidget.currentWifiSsid !== ""
                 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    spacing: 8
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
 
                     Text {
                         text: getWifiIcon(networkWidget.currentWifiSignal)
                         color: theme.success
                         font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeMd
+                        font.pixelSize: theme.fontSizeXl
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            text: networkWidget.currentWifiSsid
+                            color: theme.success
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            font.bold: true
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+
+                        Text {
+                            text: {
+                                const _ = networkWidget.savedWifiRevision
+                                return activeWifiDetails()
+                            }
+                            color: theme.subText
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
                     }
 
                     Text {
-                        text: networkWidget.currentWifiSsid
-                        color: theme.success
+                        text: ""
+                        color: forgetMouse.containsMouse ? theme.urgent : theme.subText
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeMd
-                        elide: Text.ElideRight
-                        font.bold: true
+                        MouseArea {
+                            id: forgetMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: networkWidget.forgetWifi()
+                        }
                     }
 
                     Text {
-                        text: networkWidget.isWifiActiveRoute ? "(Connected)" : "(Inactive)"
-                        color: theme.subText
+                        text: "󰤭"
+                        color: disconnectMouse.containsMouse ? theme.urgent : theme.subText
                         font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeSm
-                    }
-
-                    Item { Layout.fillWidth: true }
-                    
-                    // Forget Button
-                    Button {
-                        background: Rectangle {
-                            color: parent.hovered ? theme.accent : theme.surface
-                            radius: theme.radius
+                        font.pixelSize: theme.fontSizeMd
+                        MouseArea {
+                            id: disconnectMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: networkWidget.disconnectWifi()
                         }
-                        contentItem: Text {
-                            text: ""
-                            color: parent.parent.hovered ? theme.background : theme.text
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeMd
-                        }
-                        onClicked: networkWidget.forgetWifi()
-                    }
-
-                    // Disconnect Button
-                    Button {
-                        background: Rectangle {
-                            color: parent.hovered ? theme.accent : theme.surface
-                            radius: theme.radius
-                        }
-                        contentItem: Text {
-                            text: "󰤭"
-                            color: parent.parent.hovered ? theme.background : theme.text
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeMd
-                        }
-                        onClicked: networkWidget.disconnectWifi()
                     }
                 }
             }
@@ -253,60 +309,104 @@ PopupWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                spacing: 4
+                spacing: 6
                 model: networkWidget.wifiModel
 
                 delegate: Rectangle {
+                    readonly property bool highlighted: rowMouse.containsMouse || root.selectedSsid === model.ssid
+                    readonly property bool canForget: {
+                        const _ = networkWidget.savedWifiRevision
+                        return networkWidget.isSavedWifi(model.ssid)
+                            && model.ssid !== networkWidget.currentWifiSsid
+                    }
                     width: ListView.view.width
-                    height: 36
-                    color: root.selectedSsid === model.ssid ? theme.accent : "transparent"
+                    height: 52
+                    color: highlighted ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                     radius: theme.radius
-                    opacity: model.inUse ? 1.0 : 0.8
+                    border.width: theme.borderWidth
+                    border.color: highlighted ? theme.accent : "transparent"
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 10
 
                         Text {
                             text: getWifiIcon(model.signal)
-                            color: root.selectedSsid === model.ssid ? theme.background : theme.text
+                            color: theme.text
                             font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeMd
+                            font.pixelSize: theme.fontSizeXl
                         }
 
-                        Text {
-                            text: model.ssid
-                            color: root.selectedSsid === model.ssid ? theme.background : theme.text
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeMd
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            elide: Text.ElideRight
+                            spacing: 2
+
+                            Text {
+                                text: model.ssid
+                                color: theme.text
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                font.bold: true
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: {
+                                    const _ = networkWidget.savedWifiRevision
+                                    return wifiDetails(model.ssid, model.signal, model.security, model.inUse)
+                                }
+                                color: theme.subText
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                            }
                         }
 
                         Text {
-                            text: model.security !== "" && model.security !== "--" ? "" : "" // Lock icon
-                            color: root.selectedSsid === model.ssid ? theme.background : theme.subText
+                            visible: canForget
+                            text: ""
+                            color: listForgetMouse.containsMouse ? theme.urgent : theme.subText
                             font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
+                            font.pixelSize: theme.fontSizeMd
                         }
                     }
 
                     MouseArea {
+                        id: rowMouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: {
-                            if (model.inUse) return; // Already connected
+                            if (model.inUse && model.ssid === networkWidget.currentWifiSsid)
+                                return
                             root.selectedSsid = model.ssid;
-                            root.requiresPassword = (model.security !== "" && model.security !== "--");
+                            root.requiresPassword = !networkWidget.isSavedWifi(model.ssid)
+                                && model.security !== "" && model.security !== "--";
                             
                             if (!root.requiresPassword) {
-                                // Connect immediately if open network
                                 networkWidget.connectToWifi(model.ssid, "");
                                 root.selectedSsid = ""; 
                             } else {
                                 passwordInput.forceActiveFocus();
                             }
                         }
+                    }
+
+                    MouseArea {
+                        id: listForgetMouse
+                        z: 1
+                        visible: canForget
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 16
+                        height: 24
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: networkWidget.forgetWifi(model.ssid)
                     }
                 }
             }
@@ -338,8 +438,10 @@ PopupWindow {
 
                 Button {
                     background: Rectangle {
-                            color: parent.hovered ? theme.accent : theme.surface
+                            color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                             radius: theme.radius
+                            border.width: theme.borderWidth
+                            border.color: parent.hovered ? theme.accent : "transparent"
                     }
 
                     text: "Connect"

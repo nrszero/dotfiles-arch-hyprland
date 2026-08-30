@@ -173,9 +173,9 @@ PopupWindow {
                     width: notifList.width
                     height: 78
                     color: theme.surface
-                    radius: theme.radius - 2
-                    border.width: 1
-                    border.color: Qt.rgba(1,1,1, 0.05)
+                    radius: theme.radius
+                    border.width: theme.borderWidth
+                    border.color: "transparent"
 
                     ColumnLayout {
                         id: contentCol

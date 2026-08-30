@@ -23,6 +23,18 @@ Item {
     property bool isWifiActiveRoute: false
     property string currentWifiSsid: ""
     property int currentWifiSignal: 0
+    property var savedWifiNames: ({})
+    property int savedWifiRevision: 0
+
+    function isSavedWifi(ssid) {
+        const _rev = savedWifiRevision
+        return !!(ssid && root.savedWifiNames[ssid])
+    }
+
+    function savedWifiId(ssid) {
+        const _rev = savedWifiRevision
+        return (ssid && root.savedWifiNames[ssid]) ? root.savedWifiNames[ssid] : ""
+    }
 
     // Layout sizing - adopt the size of the icon text
     implicitWidth: 30
@@ -59,6 +71,7 @@ Item {
                     // Trigger immediate wifi checks once found
                     wifiScanCmd.running = true;
                     wifiActiveCmd.running = true;
+                    savedWifiCmd.running = true;
                 }
             }
         }
@@ -221,6 +234,40 @@ Item {
     // Backend Logic: Wi-Fi Connecting & Disconnecting
     // -------------------------------------------------------------------------
     Process {
+        id: savedWifiCmd
+        command: ["nmcli", "-t", "-f", "NAME,TYPE,TIMESTAMP", "connection", "show"]
+        running: false
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const names = {}
+                const lines = this.text.trim().split("\n")
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i] === "")
+                        continue
+                    const match = lines[i].match(/^(.*):(802-11-wireless|wifi):(\d+)$/)
+                    if (!match)
+                        continue
+                    const connName = match[1]
+                    const timestamp = parseInt(match[3], 10)
+                    if (connName && timestamp > 0)
+                        names[connName] = connName
+                }
+                root.savedWifiNames = names
+                root.savedWifiRevision += 1
+            }
+        }
+    }
+
+    Process {
+        id: wifiUpCmd
+        property string targetId: ""
+        command: ["nmcli", "connection", "up", "id", targetId]
+        running: false
+        onRunningChanged: if (!running) forceScan()
+    }
+
+    Process {
         id: wifiConnectCmd
         property string targetSsid: ""
         property string password: ""
@@ -245,7 +292,8 @@ Item {
     
     Process {
         id: wifiForgetCmd
-        command: ["nmcli", "connection", "delete", root.currentWifiSsid]
+        property string targetId: ""
+        command: ["nmcli", "connection", "delete", targetId]
         running: false
 
         // Force a rescan when the network is forgotten
@@ -253,6 +301,11 @@ Item {
     }
     
     function connectToWifi(ssid, password) {
+        if ((password === undefined || password === "") && root.savedWifiId(ssid) !== "") {
+            wifiUpCmd.targetId = root.savedWifiId(ssid);
+            wifiUpCmd.running = true;
+            return;
+        }
         wifiConnectCmd.targetSsid = ssid;
         wifiConnectCmd.password = password;
         wifiConnectCmd.running = true;
@@ -262,13 +315,18 @@ Item {
         wifiDisconnectCmd.running = true;
     }
     
-    function forgetWifi() {
-        wifiForgetCmd.running = true;
+    function forgetWifi(ssid) {
+        const id = (ssid && root.savedWifiId(ssid) !== "") ? root.savedWifiId(ssid) : (ssid || root.currentWifiSsid)
+        if (!id)
+            return
+        wifiForgetCmd.targetId = id
+        wifiForgetCmd.running = true
     }
     
     function forceScan() {
         if (!wifiScanCmd.running) wifiScanCmd.running = true;
         if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+        if (!savedWifiCmd.running) savedWifiCmd.running = true;
     }
 
     Timer {
@@ -287,6 +345,7 @@ Item {
             if (root.wifiInterfaceName !== "") {
                 if (!wifiScanCmd.running) wifiScanCmd.running = true;
                 if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+                if (!savedWifiCmd.running) savedWifiCmd.running = true;
             }
             if (!routeCheckCmd.running) {
                 routeCheckCmd.running = true;

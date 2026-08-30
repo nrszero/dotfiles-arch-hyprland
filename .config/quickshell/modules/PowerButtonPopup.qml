@@ -13,7 +13,7 @@ PopupWindow {
     anchor.margins.right: -6
     anchor.margins.top: 6
     implicitWidth: 400
-    implicitHeight: 340
+    implicitHeight: 380
     visible: false
     color: "transparent"
 
