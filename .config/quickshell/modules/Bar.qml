@@ -42,7 +42,6 @@ PanelWindow {
                                  bluetoothPopup.visible ||
                                  volumePopup.visible ||
                                  powerButtonPopup.visible ||
-                                 shortcutsPopup.visible ||
                                  calendarPopup.visible ||
                                  notifCenter.visible ||
                                  nowPlayingPopup.visible
@@ -113,7 +112,7 @@ PanelWindow {
     function togglePopup(target) {
         let popups = [
             networkPopup, bluetoothPopup, volumePopup, 
-            powerButtonPopup, shortcutsPopup, calendarPopup, notifCenter,
+            powerButtonPopup, calendarPopup, notifCenter,
             nowPlayingPopup
         ]
         
@@ -520,23 +519,6 @@ PanelWindow {
                         }
                     }
                     
-                    // Shortcuts Trigger
-                    Text {
-                        id: shortcutsIcon
-                        text: "󰌌"
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeXl
-                        color: theme.text
-                        
-                        HoverHandler { id: shortcutsIconHover }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.togglePopup(shortcutsPopup)
-                        }
-                    }
-
                     // Power
                     Text {
                         id: powerIcon
@@ -601,11 +583,6 @@ PanelWindow {
         notifModel: root.notifModel
         theme: root.theme
         dismissNotification: root.dismissNotification
-    }
-    ShortcutsPopup {
-        id: shortcutsPopup
-        anchor.item: rightBarMod
-        theme: root.theme
     }
     PowerButtonPopup {
         id: powerButtonPopup

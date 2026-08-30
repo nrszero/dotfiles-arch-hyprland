@@ -108,6 +108,20 @@ Scope {
     }
 
     property bool workspacePreviewVisible: false
+    property bool lumenVisible: false
+
+    PathIndex { id: pathIndex }
+    BindIndex { id: bindIndex }
+
+    function setLumen(on) {
+        lumenVisible = on
+        if (on) {
+            pathIndex.refreshIfStale()
+            bindIndex.refresh()
+            if (workspacePreviewVisible)
+                workspacePreviewVisible = false
+        }
+    }
 
     function setWorkspacePreview(on) {
         workspacePreviewVisible = on
@@ -121,6 +135,14 @@ Scope {
             }
         } else if (!persistentBarsVisible && activeInteractions === 0) {
             barPeekTimer.restart()
+        }
+    }
+
+    GlobalShortcut {
+        name: "lumen"
+        onPressedChanged: {
+            if (pressed)
+                shellRoot.setLumen(!shellRoot.lumenVisible)
         }
     }
 
@@ -189,6 +211,15 @@ Scope {
                             theme: appTheme
                             previewVisible: shellRoot.workspacePreviewVisible
                             barVisible: shellRoot.barsVisible
+                        }
+
+                        Lumen {
+                            screenModel: wrapper.modelData
+                            theme: appTheme
+                            lumenVisible: shellRoot.lumenVisible
+                            pathStore: pathIndex
+                            bindStore: bindIndex
+                            onCloseRequested: shellRoot.setLumen(false)
                         }
 
                         Bar {

@@ -1,6 +1,6 @@
 -- Main
 hl.bind(MAIN_MOD .. " + T", hl.dsp.exec_cmd(TERMINAL), { description = "Open Terminal" })
-hl.bind(MAIN_MOD .. " + SPACE", hl.dsp.exec_cmd(MENU), { description = "Open App Launcher" })
+hl.bind(MAIN_MOD .. " + SPACE", hl.dsp.global("quickshell:lumen"), { description = "Open Lumen" })
 hl.bind(MAIN_MOD .. " + E", hl.dsp.exec_cmd(FILE_MANAGER), { description = "Open File Manager" })
 hl.bind(MAIN_MOD .. " + C", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(MAIN_MOD .. " + W", hl.dsp.exec_cmd(BROWSER), { description = "Open Browser" })

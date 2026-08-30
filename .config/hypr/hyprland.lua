@@ -4,7 +4,6 @@ MAIN_MOD = "SUPER"
 TERMINAL = "kitty"
 BROWSER = "google-chrome-stable --ozone-platform=wayland --ozone-platform-hint=auto"
 FILE_MANAGER = "kitty yazi"
-MENU = "rofi -show combi -modes combi -combi-modes drun,run"
 WORKSPACES = 6 -- Move windows to a workspace that will exist if making value smaller.
 
 local monitors = dofile("/etc/greetd/monitors.lua")

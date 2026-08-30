@@ -12,7 +12,7 @@ neovim
 yazi
 fastfetch
 btop
-rofi
+libqalculate
 mpv
 mpv-mpris
 pavucontrol

@@ -129,21 +129,6 @@ return {
     color12 = "${color12}"
 }
 EOF
-			# Generate Rofi colors to match Quickshell Theme.qml
-			cat << EOF > "$HOME/.cache/wal/colors-rounded-glass.rasi"
-* {
-    bg0:    ${background}33;
-    bg1:    ${color2}cc;
-    bg2:    ${color0}33;
-    bg3:    ${color0}33;
-    bg4:    ${color0}33;
-    fg0:    ${foreground}cc;
-    fg1:    ${foreground}cc;
-    fg2:    ${foreground}cc;
-    fg3:    ${foreground}cc;
-    border: ${color6}33;
-}
-EOF
 			# Atomic JSON Backup
 			cp "$HOME/.cache/wal/colors.json" "/var/tmp/greeter-colors.tmp"
 			chmod 644 "/var/tmp/greeter-colors.tmp"
