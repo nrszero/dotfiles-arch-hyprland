@@ -44,7 +44,8 @@ PanelWindow {
                                  powerButtonPopup.visible ||
                                  shortcutsPopup.visible ||
                                  calendarPopup.visible ||
-                                 notifCenter.visible
+                                 notifCenter.visible ||
+                                 nowPlayingPopup.visible
 
     signal interactionStarted()
     signal interactionEnded()
