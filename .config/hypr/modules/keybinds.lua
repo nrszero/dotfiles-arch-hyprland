@@ -24,8 +24,8 @@ hl.bind(MAIN_MOD .. " + F", hl.dsp.window.fullscreen(), { description = "Toggle 
 hl.bind("PRINT", hl.dsp.exec_cmd("hyprshot -m output"), { description = "Screenshot entire monitor" })
 hl.bind(MAIN_MOD .. " + PRINT", hl.dsp.exec_cmd("hyprshot -m window"), { description = "Screenshot active window" })
 hl.bind("SHIFT + PRINT", hl.dsp.exec_cmd("hyprshot -m region"), { description = "Screenshot region" })
-hl.bind(MAIN_MOD .. " + R", hl.dsp.exec_cmd('mkdir -p ~/Videos && GEOM=$(slurp -o) && notify-send "Recording started" "Press SUPER + SHIFT + R to stop." -t 4000 2>/dev/null && wf-recorder -g "$GEOM" -f ~/Videos/recording-$(date +%Y-%m-%d_%H-%M-%S).mp4'), {description = "Screen record (Select monitor)"})
-hl.bind(MAIN_MOD .. " + SHIFT + R", hl.dsp.exec_cmd('killall -s SIGINT wf-recorder && notify-send "Recording saved!" "Saved to ~/Videos" -t 4000 2>/dev/null'), {description = "Screen record stop"})
+hl.bind(MAIN_MOD .. " + R", hl.dsp.exec_cmd('mkdir -p ~/Videos && OUT="$HOME/Videos/recording-$(date +%Y-%m-%d_%H-%M-%S).mp4" && echo "$OUT" > /tmp/qs-last-recording && GEOM=$(slurp -o) && notify-send "Recording started" "Press SUPER + SHIFT + R to stop." -t 4000 2>/dev/null && wf-recorder -g "$GEOM" -f "$OUT"'), {description = "Screen record (Select monitor)"})
+hl.bind(MAIN_MOD .. " + SHIFT + R", hl.dsp.exec_cmd('killall -s SIGINT wf-recorder && notify-send "Recording saved!" "Saved to $(cat /tmp/qs-last-recording 2>/dev/null || echo $HOME/Videos)" -t 4000 2>/dev/null'), {description = "Screen record stop"})
 
 -- Focus window
 hl.bind(MAIN_MOD .. " + H", hl.dsp.focus({ direction = "l" }), { description = "Focus left" })

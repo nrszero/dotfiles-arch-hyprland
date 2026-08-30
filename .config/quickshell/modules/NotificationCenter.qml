@@ -2,8 +2,10 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtCore
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "NotifPaths.js" as NotifPaths
 
 PopupWindow {
     id: root
@@ -246,16 +248,27 @@ PopupWindow {
                             }
                         }
 
-                        // Body
                         Text {
-                            text: model.body || ""
+                            text: NotifPaths.linkify(model.body || "", StandardPaths.writableLocation(StandardPaths.HomeLocation))
+                            textFormat: Text.RichText
                             color: theme.subText
+                            linkColor: theme.accent
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
                             font.pixelSize: theme.fontSizeSm
                             elide: Text.ElideRight
                             maximumLineCount: 2
-                            visible: text !== ""
+                            visible: model.body !== ""
+                            onLinkActivated: (link) => {
+                                const path = NotifPaths.resolve(link, StandardPaths.writableLocation(StandardPaths.HomeLocation))
+                                if (path)
+                                    Quickshell.execDetached(["kitty", "yazi", path])
+                            }
+
+                            HoverHandler {
+                                enabled: parent.hoveredLink !== ""
+                                cursorShape: Qt.PointingHandCursor
+                            }
                         }
                     }
                 }
