@@ -4,7 +4,6 @@ import Quickshell.Wayland
 import Quickshell.Services.Pam
 import Quickshell.Io
 import "./modules"
-import "./"
 
 ShellRoot {
     id: root

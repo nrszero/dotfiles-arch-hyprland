@@ -1,7 +1,6 @@
 //@ pragma UseQApplication
 import Quickshell
 import QtQuick
-import QtQuick 2.0
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell.Services.Pipewire

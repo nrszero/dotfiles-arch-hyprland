@@ -49,9 +49,8 @@ log "Command: quickshell -p lock-shell.qml"
 export QSG_RHI_BACKEND=vulkan # Prevent quickshell crash after sleep
 export QSG_RENDER_LOOP=basic # Prevent DPMS deadlock
 
-# Run quickshell and capture everything
-quickshell -p lock-shell.qml > "$LOG_FILE" 2>&1
-# WAYLAND_DEBUG=1 QT_DEBUG_PLUGINS=1 quickshell -p lock-shell.qml > "$LOG_FILE" 2>&1
+# Append so the startup lines above survive; do not truncate this file here.
+quickshell -p lock-shell.qml >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 log "Quickshell exited with code: $EXIT_CODE"

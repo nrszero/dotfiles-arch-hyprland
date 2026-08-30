@@ -2,7 +2,6 @@
 import Quickshell
 import QtQuick
 import Quickshell.Services.Notifications
-import Quickshell.Services.SystemTray
 import Quickshell.Hyprland
 import "./modules"
 import "./"

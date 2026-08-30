@@ -24,7 +24,7 @@ hl.bind(MAIN_MOD .. " + F", hl.dsp.window.fullscreen(), { description = "Toggle 
 hl.bind(MAIN_MOD .. " + PRINT", hl.dsp.exec_cmd("hyprshot -m window"), { description = "Screenshot active window" })
 hl.bind("PRINT", hl.dsp.exec_cmd("hyprshot -m output"), { description = "Screenshot entire monitor" })
 --hl.bind("$shiftMod" .. " + " .. "PRINT", hl.dsp.exec_cmd("hyprshot -m region"), { description = "Screenshot region" })
-hl.bind(MAIN_MOD .. "+ R", hl.dsp.exec_cmd('GEOM=$(slurp -o) && notify-send "Recording started" "Press SUPER + SHIFT + R to stop." -t 4000 2>/dev/null && wf-recorder -g "$GEOM" -f ~/Videos/recording.mp4'), {description = "Screen record (Select monitor)"})
+hl.bind(MAIN_MOD .. " + R", hl.dsp.exec_cmd('mkdir -p ~/Videos && GEOM=$(slurp -o) && notify-send "Recording started" "Press SUPER + SHIFT + R to stop." -t 4000 2>/dev/null && wf-recorder -g "$GEOM" -f ~/Videos/recording.mp4'), {description = "Screen record (Select monitor)"})
 hl.bind(MAIN_MOD .. "+ SHIFT + R", hl.dsp.exec_cmd('killall -s SIGINT wf-recorder && notify-send "Recording saved!" "Saved to ~/Videos/recording.mp4" -t 4000 2>/dev/null'), {description = "Screen record stop"})
 
 -- Focus window
@@ -40,12 +40,12 @@ hl.bind(MAIN_MOD .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }), { d
 hl.bind(MAIN_MOD .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }), { description = "Move window down" })
 
 -- Move active window to a workspace
-for i = 0, WORKSPACES do
+for i = 1, WORKSPACES do
     hl.bind(MAIN_MOD .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }), { description = "Move window to workspace " .. i })
 end
 
 -- Switch workspaces
-for i = 0, WORKSPACES do
+for i = 1, WORKSPACES do
     hl.bind(MAIN_MOD .. " + " .. i, hl.dsp.focus({ workspace = i }), { description = "Switch to workspace " .. i })
 end
 

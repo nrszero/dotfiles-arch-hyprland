@@ -11,7 +11,6 @@ vim.opt.clipboard = "unnamedplus"
 
 ---THEME---
 vim.opt.termguicolors = true
---vim.cmd.colorscheme "tokyonight-night"
 vim.cmd.colorscheme "modus"
 vim.api.nvim_set_hl(0, 'Normal', {bg = 'None'})
 vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
