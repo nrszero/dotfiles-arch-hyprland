@@ -2,7 +2,7 @@
 
 Arch Linux + Hyprland configuration files.
 
-Managed with GNU Stow.
+User configs in `~/.config` are symlinked with GNU Stow. System files under `/etc` are copied by `install.sh`.
 
 ## Features
 
@@ -97,8 +97,8 @@ SKIP_PACKAGES=1 ./install.sh
 - Detects Intel or AMD CPUs to dynamically install the correct Vulkan drivers.
 - Auto-detects NVIDIA GPU and configures accordingly.
 - Scans for Bluetooth hardware and automatically enables bluetooth.service if found.
-- Symlinks configurations to `~/.config` using stow.
-- Deploys system-wide configs to `/etc` (requires sudo).
+- Symlinks `~/.config` with Stow.
+- Copies system configs to `/etc` with rsync (requires sudo).
 - Installs wallpapers to `/usr/share/wallpapers`.
 
 ### Troubleshooting
