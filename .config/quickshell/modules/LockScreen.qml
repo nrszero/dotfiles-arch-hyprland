@@ -459,6 +459,7 @@ Item {
                         }
                         background: Rectangle {
                             color: Qt.darker(theme.surface, 1.2)
+                            border.width: theme.borderWidth
                             border.color: inputField.activeFocus ? theme.accent : "transparent"
                             radius: theme.radius
                         }                                                        
@@ -487,7 +488,7 @@ Item {
                         text: "Unlock"
                         Layout.alignment: Qt.AlignHCenter
                         Layout.preferredWidth: 80
-                        Layout.preferredHeight: 40
+                        Layout.preferredHeight: 45
                         enabled: !context.unlockInProgress && inputField.text.length > 0
 
                         background: Rectangle {

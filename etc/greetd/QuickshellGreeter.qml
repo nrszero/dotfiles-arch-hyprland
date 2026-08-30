@@ -450,6 +450,7 @@ ShellRoot {
                                 }
                                 background: Rectangle {
                                     color: Qt.darker(theme.surface, 1.2)
+                                    border.width: theme.borderWidth
                                     border.color: inputField.activeFocus ? theme.accent : "transparent"
                                     radius: theme.radius
                                 } 
@@ -475,7 +476,7 @@ ShellRoot {
                                 text: loginState.state === "username" ? "Next" : "Login"
                                 Layout.alignment: Qt.AlignHCenter
                                 Layout.preferredWidth: 80
-                                Layout.preferredHeight: 40
+                                Layout.preferredHeight: 45
                                     
                                 background: Rectangle {
                                     color: parent.hovered || parent.down ? theme.accent : theme.surface
