@@ -57,7 +57,7 @@ Scope {
 
     //-----END NOTIFICATIONS-----
     
-    // Persistent user-controlled bar visibility (toggled with SUPER + Tab)
+    // Persistent user-controlled bar visibility (toggled with SUPER + B)
     property bool persistentBarsVisible: true
 
     // Temporary "peek" visibility (auto-triggered on workspace changes)
