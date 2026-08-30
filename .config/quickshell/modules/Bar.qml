@@ -63,9 +63,18 @@ PanelWindow {
     exclusionMode: ExclusionMode.Normal
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+    Item {
+        id: topEdgeHit
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 10
+    }
+
     mask: Region {
         regions: [
-            Region { item: mainLayout }
+            Region { item: mainLayout },
+            Region { item: topEdgeHit }
         ]
     }
 

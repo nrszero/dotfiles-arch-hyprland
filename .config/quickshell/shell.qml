@@ -2,6 +2,7 @@
 import Quickshell
 import QtQuick
 import Quickshell.Services.Notifications
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import "./modules"
 import "./"
@@ -159,6 +160,7 @@ Scope {
                         }
 
                         Bar {
+                            id: screenBar
                             screenModel: wrapper.modelData
                             theme: appTheme
                             notifModel: sharedNotifList
@@ -172,6 +174,73 @@ Scope {
                             Component.onDestruction: {
                                 shellRoot.unregisterInteraction()
                             }
+                        }
+
+                        PanelWindow {
+                            id: edgePeek
+                            screen: wrapper.modelData
+                            visible: !shellRoot.persistentBarsVisible && !screenBar.hasFullscreen
+                            implicitHeight: 2
+                            color: "transparent"
+                            exclusionMode: ExclusionMode.Ignore
+                            WlrLayershell.layer: WlrLayer.Overlay
+                            WlrLayershell.exclusiveZone: 0
+                            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+                            anchors { top: true; left: true; right: true }
+
+                            property bool holding: false
+
+                            function grab() {
+                                shellRoot.peekBarTemporarily()
+                                if (!holding) {
+                                    holding = true
+                                    shellRoot.registerInteraction()
+                                }
+                            }
+
+                            function release() {
+                                if (holding) {
+                                    holding = false
+                                    shellRoot.unregisterInteraction()
+                                }
+                            }
+
+                            mask: Region { item: edgeHit }
+
+                            Rectangle {
+                                id: edgeHit
+                                anchors.fill: parent
+                                color: "#01000000"
+                            }
+
+                            HoverHandler {
+                                id: edgeHover
+                                onHoveredChanged: {
+                                    if (hovered)
+                                        edgePeek.grab()
+                                    else
+                                        edgePeek.release()
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onEntered: edgePeek.grab()
+                                onExited: edgePeek.release()
+                            }
+
+                            onVisibleChanged: {
+                                if (visible)
+                                    Qt.callLater(function() {
+                                        if (edgePeek.visible && edgeHover.hovered)
+                                            edgePeek.grab()
+                                    })
+                                else
+                                    edgePeek.release()
+                            }
+
+                            Component.onDestruction: edgePeek.release()
                         }
                     }
                 }
