@@ -1,6 +1,7 @@
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 
@@ -12,11 +13,16 @@ PopupWindow {
     anchor.margins.right: -6
     anchor.margins.top: 6
     implicitWidth: 400
-    implicitHeight: 250
+    implicitHeight: card.implicitHeight + 12
     visible: false
     color: "transparent"
 
+    property bool showOutputDevices: false
+    property bool showInputDevices: false
+
     HoverHandler { id: popupHover }
+
+    AudioDevices { id: devices }
 
     Timer {
         id: hideTimer
@@ -39,31 +45,51 @@ PopupWindow {
         } 
     }
 
-    onVisibleChanged: if (visible) { hideTimer.stop(); Qt.callLater(updateHover) }
+    onVisibleChanged: {
+        if (visible) {
+            hideTimer.stop()
+            Qt.callLater(updateHover)
+        } else {
+            showOutputDevices = false
+            showInputDevices = false
+        }
+    }
+
+    function setVolume(node, ratio) {
+        if (!node || !node.audio)
+            return
+        node.audio.muted = false
+        node.audio.volume = Math.max(0, Math.min(1, ratio))
+    }
 
     Rectangle {
-        anchors.fill: parent
+        id: card
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: 6
+        implicitHeight: contentColumn.implicitHeight + 24
         color: theme.background
         radius: theme.radius
         border.width: theme.borderWidth
         border.color: theme.borderColor
 
         ColumnLayout {
-            anchors.fill: parent
+            id: contentColumn
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: 12
             spacing: 8
             
-            // Header
             RowLayout {
                 Layout.fillWidth: true
-                Layout.bottomMargin: 8
+                Layout.bottomMargin: 4
                 spacing: 8
 
-                // Accent Pill
                 Rectangle {
                     width: 4
-                    Layout.preferredHeight: 18 // Roughly matches the text height
+                    Layout.preferredHeight: 18
                     radius: 2
                     color: theme.accent 
                 }
@@ -78,8 +104,6 @@ PopupWindow {
                 }
             }
 
-            PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
-
             RowLayout {
                 Layout.fillWidth: true
                 
@@ -91,59 +115,52 @@ PopupWindow {
                     font.bold: true
                 }
                 
-                Item { Layout.fillWidth: true } // Spacer pushes percentage to the right
+                Item { Layout.fillWidth: true }
                 
-                // Volume Percentage readout
                 Text {
-                    text: Math.round((Pipewire.defaultAudioSink?.audio.volume ?? 0) * 100) + "%"
-                    // Turn text urgent color if muted
-                    color: Pipewire.defaultAudioSink?.audio.muted ? theme.urgent : theme.subText
+                    text: Math.round((devices.sink?.audio.volume ?? 0) * 100) + "%"
+                    color: devices.sink?.audio.muted ? theme.urgent : theme.subText
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeSm
                 }
             }
 
-            // Display the actual hardware device name
             Text {
-                text: Pipewire.defaultAudioSink?.description ?? "No output device"
+                text: devices.nodeLabel(devices.sink) || "No output device"
                 color: theme.subText
                 font.family: theme.fontFace
                 font.pixelSize: theme.fontSizeSm
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                Layout.bottomMargin: 4
             }
 
             RowLayout {
                 spacing: 12
                 
-                // Volume Icon (Dynamic based on volume level and mute state)
                 Text {
-                    text: Pipewire.defaultAudioSink?.audio.muted ? "" : 
-                          (Pipewire.defaultAudioSink?.audio.volume ?? 0) > 0.5 ? "" : ""
+                    text: devices.sink?.audio.muted ? "" : 
+                          (devices.sink?.audio.volume ?? 0) > 0.5 ? "" : ""
                     font.pixelSize: 20
-                    color: Pipewire.defaultAudioSink?.audio.muted ? theme.urgent : theme.text
+                    color: devices.sink?.audio.muted ? theme.urgent : theme.text
 
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (Pipewire.defaultAudioSink)
-                                Pipewire.defaultAudioSink.audio.muted = !Pipewire.defaultAudioSink.audio.muted
+                            if (devices.sink)
+                                devices.sink.audio.muted = !devices.sink.audio.muted
                         }
                     }
                 }
 
-                // Volume Slider
                 Rectangle {
                     Layout.fillWidth: true; height: 8; radius: theme.radius
                     color: Qt.darker(theme.surface, 1.5)
                     
                     Rectangle {
-                        // Math.min prevents the visual bar from overflowing if volume goes past 100%
-                        width: parent.width * Math.min(1, (Pipewire.defaultAudioSink?.audio.volume ?? 0))
+                        width: parent.width * Math.min(1, (devices.sink?.audio.volume ?? 0))
                         height: parent.height; radius: 3; 
-                        color: Pipewire.defaultAudioSink?.audio.muted ? theme.urgent : theme.accent
+                        color: devices.sink?.audio.muted ? theme.urgent : theme.accent
                     }
                     
                     MouseArea {
@@ -151,28 +168,114 @@ PopupWindow {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onPositionChanged: (mouse) => {
-                            if (pressed && Pipewire.defaultAudioSink) {
-                                Pipewire.defaultAudioSink.audio.muted = false // Auto-unmute on drag
-                                Pipewire.defaultAudioSink.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
+                            if (pressed)
+                                root.setVolume(devices.sink, mouse.x / width)
+                        }
+                        onClicked: (mouse) => root.setVolume(devices.sink, mouse.x / width)
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                radius: theme.radius
+                color: outToggleMouse.containsMouse ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                border.width: theme.borderWidth
+                border.color: outToggleMouse.containsMouse ? theme.accent : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: root.showOutputDevices ? "Hide output devices" : "Show output devices"
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+
+                    Text {
+                        text: devices.sinks.length + (devices.sinks.length === 1 ? " device" : " devices")
+                        color: theme.subText
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                    }
+
+                    Text {
+                        text: root.showOutputDevices ? "󰅃" : "󰅀"
+                        color: theme.subText
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeMd
+                    }
+                }
+
+                MouseArea {
+                    id: outToggleMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.showOutputDevices = !root.showOutputDevices
+                }
+            }
+
+            ColumnLayout {
+                visible: root.showOutputDevices
+                Layout.fillWidth: true
+                spacing: 6
+
+                Repeater {
+                    model: devices.sinks
+                    delegate: Rectangle {
+                        required property var modelData
+                        readonly property bool current: devices.isCurrentSink(modelData)
+                        readonly property bool highlighted: rowMouse.containsMouse || current
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: theme.radius
+                        color: highlighted ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                        border.width: theme.borderWidth
+                        border.color: highlighted ? theme.accent : "transparent"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                text: ""
+                                color: current ? theme.success : theme.subText
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeMd
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: devices.nodeLabel(modelData)
+                                color: current ? theme.success : theme.text
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                elide: Text.ElideRight
                             }
                         }
-                        onClicked: (mouse) => {
-                            if (Pipewire.defaultAudioSink) {
-                                Pipewire.defaultAudioSink.audio.muted = false // Auto-unmute on click
-                                Pipewire.defaultAudioSink.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
-                            }
+
+                        MouseArea {
+                            id: rowMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: devices.setSink(modelData)
                         }
                     }
                 }
             }
 
-            // Spacer between sections
-            Item { Layout.fillHeight: true; Layout.minimumHeight: 8 }
-
-            // ----------------------------------------------------------------
-            // Input Section (Microphone)
-            // ----------------------------------------------------------------
-            PwObjectTracker { objects: [Pipewire.defaultAudioSource] }
+            Item { Layout.preferredHeight: 4 }
 
             RowLayout {
                 Layout.fillWidth: true
@@ -188,51 +291,48 @@ PopupWindow {
                 Item { Layout.fillWidth: true } 
                 
                 Text {
-                    text: Math.round((Pipewire.defaultAudioSource?.audio.volume ?? 0) * 100) + "%"
-                    color: Pipewire.defaultAudioSource?.audio.muted ? theme.urgent : theme.subText
+                    text: Math.round((devices.source?.audio.volume ?? 0) * 100) + "%"
+                    color: devices.source?.audio.muted ? theme.urgent : theme.subText
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeSm
                 }
             }
 
             Text {
-                text: Pipewire.defaultAudioSource?.description ?? "No input device"
+                text: devices.nodeLabel(devices.source) || "No input device"
                 color: theme.subText
                 font.family: theme.fontFace
                 font.pixelSize: theme.fontSizeSm
                 Layout.fillWidth: true
                 elide: Text.ElideRight
-                Layout.bottomMargin: 4
             }
 
             RowLayout {
                 spacing: 12
 
-                // Mic Icon
                 Text {
-                    text: (Pipewire.defaultAudioSource?.audio.muted) ? "󰍭" : "󰍬"
+                    text: (devices.source?.audio.muted) ? "󰍭" : "󰍬"
                     font.pixelSize: 20
-                    color: Pipewire.defaultAudioSource?.audio.muted ? theme.urgent : theme.text
+                    color: devices.source?.audio.muted ? theme.urgent : theme.text
 
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (Pipewire.defaultAudioSource)
-                                Pipewire.defaultAudioSource.audio.muted = !Pipewire.defaultAudioSource.audio.muted
+                            if (devices.source)
+                                devices.source.audio.muted = !devices.source.audio.muted
                         }
                     }
                 }
 
-                // Mic Slider
                 Rectangle {
                     Layout.fillWidth: true; height: 8; radius: theme.radius
                     color: Qt.darker(theme.surface, 1.5)
                     
                     Rectangle {
-                        width: parent.width * Math.min(1, (Pipewire.defaultAudioSource?.audio.volume ?? 0))
+                        width: parent.width * Math.min(1, (devices.source?.audio.volume ?? 0))
                         height: parent.height; radius: 3; 
-                        color: Pipewire.defaultAudioSource?.audio.muted ? theme.urgent : theme.accent
+                        color: devices.source?.audio.muted ? theme.urgent : theme.accent
                     }
                     
                     MouseArea {
@@ -240,16 +340,108 @@ PopupWindow {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onPositionChanged: (mouse) => {
-                            if (pressed && Pipewire.defaultAudioSource) {
-                                Pipewire.defaultAudioSource.audio.muted = false
-                                Pipewire.defaultAudioSource.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
+                            if (pressed)
+                                root.setVolume(devices.source, mouse.x / width)
+                        }
+                        onClicked: (mouse) => root.setVolume(devices.source, mouse.x / width)
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                radius: theme.radius
+                color: inToggleMouse.containsMouse ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                border.width: theme.borderWidth
+                border.color: inToggleMouse.containsMouse ? theme.accent : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: root.showInputDevices ? "Hide input devices" : "Show input devices"
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                        font.bold: true
+                        Layout.fillWidth: true
+                    }
+
+                    Text {
+                        text: devices.sources.length + (devices.sources.length === 1 ? " device" : " devices")
+                        color: theme.subText
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                    }
+
+                    Text {
+                        text: root.showInputDevices ? "󰅃" : "󰅀"
+                        color: theme.subText
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeMd
+                    }
+                }
+
+                MouseArea {
+                    id: inToggleMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.showInputDevices = !root.showInputDevices
+                }
+            }
+
+            ColumnLayout {
+                visible: root.showInputDevices
+                Layout.fillWidth: true
+                spacing: 6
+
+                Repeater {
+                    model: devices.sources
+                    delegate: Rectangle {
+                        required property var modelData
+                        readonly property bool current: devices.isCurrentSource(modelData)
+                        readonly property bool highlighted: srcMouse.containsMouse || current
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: theme.radius
+                        color: highlighted ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                        border.width: theme.borderWidth
+                        border.color: highlighted ? theme.accent : "transparent"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                text: "󰍬"
+                                color: current ? theme.success : theme.subText
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeMd
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: devices.nodeLabel(modelData)
+                                color: current ? theme.success : theme.text
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                elide: Text.ElideRight
                             }
                         }
-                        onClicked: (mouse) => {
-                            if (Pipewire.defaultAudioSource) {
-                                Pipewire.defaultAudioSource.audio.muted = false
-                                Pipewire.defaultAudioSource.audio.volume = Math.max(0, Math.min(1, mouse.x / width))
-                            }
+
+                        MouseArea {
+                            id: srcMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: devices.setSource(modelData)
                         }
                     }
                 }

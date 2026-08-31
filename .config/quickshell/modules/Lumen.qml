@@ -16,6 +16,9 @@ PanelWindow {
     required property bool lumenVisible
     required property PathIndex pathStore
     required property BindIndex bindStore
+    required property var notifModel
+    required property var dismissNotification
+    required property var networkWidget
 
     signal closeRequested()
 
@@ -35,7 +38,20 @@ PanelWindow {
     readonly property bool isMathQuery: parsedQuery.filter === "calc" || isMathText(parsedQuery.needle)
     readonly property string mathExpression: parsedQuery.filter === "calc" ? parsedQuery.needle : parsedQuery.needle
     readonly property bool showingCalc: isMathQuery || (keepCalcHistory && query.trim() === "")
-    readonly property var chipOrder: ["all", "apps", "cli", "binds"]
+    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs"]
+    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power"]
+    readonly property bool showingSystemTab: !showingCalc && systemChips.indexOf(parsedQuery.filter) >= 0
+    readonly property bool showAllHints: parsedQuery.filter === "all" && !showingCalc
+    readonly property var activeTab: {
+        switch (parsedQuery.filter) {
+        case "networks": return networkTab
+        case "bluetooth": return bluetoothTab
+        case "audio": return audioTab
+        case "notifs": return notifTab
+        case "power": return powerTab
+        default: return null
+        }
+    }
 
     screen: screenModel
     visible: lumenVisible && isOnFocusedMonitor
@@ -124,6 +140,7 @@ PanelWindow {
         const wantApps = filter === "all" || filter === "apps"
         const wantCli = filter === "all" || filter === "cli"
         const wantBinds = filter === "all" || filter === "binds"
+        const wantPower = filter === "all"
 
         if (wantApps && DesktopEntries.applications) {
             const apps = [...(DesktopEntries.applications.values || [])]
@@ -207,7 +224,34 @@ PanelWindow {
                     arg: b.arg,
                     score: s,
                     recency: 0,
-                    ordinal: b.ordinal
+                    ordinal: b.ordinal,
+                    command: []
+                })
+            }
+        }
+
+        if (wantPower && needle && powerTab && powerTab.actions) {
+            const acts = powerTab.actions
+            for (let i = 0; i < acts.length; i++) {
+                const a = acts[i]
+                const key = "power:" + a.key
+                const s = bestScore([a.title, a.subtitle, a.key], needle)
+                if (s <= 0)
+                    continue
+                items.push({
+                    key: key,
+                    kind: "power",
+                    title: a.title,
+                    subtitle: a.subtitle,
+                    iconName: a.icon,
+                    appId: "",
+                    triggerText: "",
+                    cliPath: "",
+                    dispatcher: "",
+                    arg: "",
+                    score: s,
+                    recency: 0,
+                    command: a.command
                 })
             }
         }
@@ -241,6 +285,8 @@ PanelWindow {
 
     function resetSelection() {
         selectedIndex = 0
+        if (showingSystemTab && activeTab)
+            activeTab.resetSelection()
         Qt.callLater(() => {
             if (resultsView.count > 0)
                 resultsView.positionViewAtBeginning()
@@ -248,6 +294,10 @@ PanelWindow {
     }
 
     function moveSelection(delta) {
+        if (root.showingSystemTab && root.activeTab) {
+            root.activeTab.moveSelection(delta)
+            return
+        }
         const count = resultsView.count
         if (count <= 0) {
             selectedIndex = 0
@@ -354,6 +404,10 @@ PanelWindow {
     }
 
     function activateSelected(inTerminal) {
+        if (root.showingSystemTab && root.activeTab) {
+            root.activeTab.activateSelected()
+            return
+        }
         if (root.showingCalc) {
             const calcItem = selectedCalcItem()
             if (calcItem && calcItem.live === false) {
@@ -379,11 +433,27 @@ PanelWindow {
             launchApp(item, inTerminal)
         else if (item.kind === "cli")
             launchCli(item, inTerminal)
+        else if (item.kind === "power" && item.command)
+            launchPower(item)
+    }
+
+    function launchPower(item) {
+        if (!item.command)
+            return
+        Quickshell.execDetached(item.command)
+        root.close()
     }
 
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
+            if (root.showingSystemTab && root.activeTab && root.activeTab.cancelPending()) {
+                searchField.forceActiveFocus()
+                event.accepted = true
+                return
+            }
             root.close()
+            event.accepted = true
+        } else if (root.showingSystemTab && root.activeTab && root.activeTab.handleKey(event)) {
             event.accepted = true
         } else if (event.key === Qt.Key_Down || (event.key === Qt.Key_N && (event.modifiers & Qt.ControlModifier))) {
             moveSelection(1)
@@ -475,7 +545,7 @@ PanelWindow {
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: 640
+        width: 720
         height: 520
         color: theme.background
         radius: theme.radius
@@ -484,7 +554,11 @@ PanelWindow {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: searchField.forceActiveFocus()
+            onClicked: {
+                if (networkTab.passwordOpen)
+                    return
+                searchField.forceActiveFocus()
+            }
         }
 
         ColumnLayout {
@@ -560,63 +634,108 @@ PanelWindow {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 6
 
-                Repeater {
-                    model: [
-                        { label: "All", value: "all" },
-                        { label: "Apps", value: "apps" },
-                        { label: "CLI", value: "cli" },
-                        { label: "Binds", value: "binds" }
-                    ]
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 6
 
-                    delegate: Rectangle {
-                        required property var modelData
-                        readonly property bool selected: root.chip === modelData.value
-                        implicitHeight: 28
-                        implicitWidth: chipText.implicitWidth + 16
-                        radius: theme.radius
-                        color: selected ? theme.accent : theme.surface
+                    Repeater {
+                        model: [
+                            { label: "All", value: "all", searchable: true },
+                            { label: "Apps", value: "apps", searchable: true },
+                            { label: "CLI", value: "cli", searchable: true },
+                            { label: "Binds", value: "binds", searchable: true },
+                            { label: "Power", value: "power", searchable: true },
+                            { divider: true },
+                            { label: "Networks", value: "networks", searchable: false },
+                            { label: "Bluetooth", value: "bluetooth", searchable: false },
+                            { label: "Audio", value: "audio", searchable: false },
+                            { label: "Notifs", value: "notifs", searchable: false }
+                        ]
 
-                        Text {
-                            id: chipText
-                            anchors.centerIn: parent
-                            text: modelData.label
-                            color: theme.text
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeSm
-                            font.bold: selected
-                        }
+                        delegate: Item {
+                            required property var modelData
+                            readonly property bool isDivider: !!modelData.divider
+                            readonly property bool selected: !isDivider && root.chip === modelData.value
+                            readonly property bool searchable: !isDivider && !!modelData.searchable
+                            implicitHeight: 28
+                            implicitWidth: isDivider ? 9 : chipText.implicitWidth + 16
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.chip = modelData.value
-                                root.keepCalcHistory = false
-                                root.resetSelection()
-                                searchField.forceActiveFocus()
+                            Rectangle {
+                                visible: isDivider
+                                width: 1
+                                height: 16
+                                anchors.centerIn: parent
+                                color: theme.borderColor
+                            }
+
+                            Rectangle {
+                                visible: !isDivider
+                                anchors.fill: parent
+                                radius: theme.radius
+                                color: selected ? theme.accent : theme.surface
+                                border.width: searchable && !selected ? theme.borderWidth : 0
+                                border.color: searchable && !selected ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.55) : "transparent"
+
+                                Text {
+                                    id: chipText
+                                    anchors.centerIn: parent
+                                    text: modelData.label || ""
+                                    color: selected || searchable ? theme.text : theme.subText
+                                    font.family: theme.fontFace
+                                    font.pixelSize: theme.fontSizeSm
+                                    font.bold: selected
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        root.chip = modelData.value
+                                        root.keepCalcHistory = false
+                                        root.resetSelection()
+                                        searchField.forceActiveFocus()
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                Item { Layout.fillWidth: true }
-
                 Text {
                     text: {
                         if (root.showingCalc) {
                             const n = root.calcHistory.length
-                            return n + (n === 1 ? " saved" : " saved")
+                            return n + " saved"
                         }
+                        if (root.showingSystemTab && root.activeTab)
+                            return root.activeTab.statusText
                         const n = filtered.values ? filtered.values.length : 0
                         return n + (n === 1 ? " result" : " results")
                     }
+                    Layout.alignment: Qt.AlignTop
                     color: theme.subText
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeSm
                 }
             }
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: {
+                    if (!root.showingSystemTab)
+                        return 0
+                    switch (root.parsedQuery.filter) {
+                    case "networks": return 1
+                    case "bluetooth": return 2
+                    case "audio": return 3
+                    case "notifs": return 4
+                    case "power": return 5
+                    default: return 0
+                    }
+                }
 
             ListView {
                     id: resultsView
@@ -685,7 +804,7 @@ PanelWindow {
                             Item {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                visible: modelData.kind === "app" || modelData.kind === "cli"
+                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power"
 
                                 IconImage {
                                     id: appIcon
@@ -714,6 +833,15 @@ PanelWindow {
                                     font.family: theme.fontFace
                                     font.pixelSize: theme.fontSizeLg
                                 }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: modelData.kind === "power"
+                                    text: modelData.iconName || ""
+                                    color: theme.accent
+                                    font.family: theme.fontFace
+                                    font.pixelSize: theme.fontSizeLg
+                                }
                             }
 
                             Text {
@@ -726,7 +854,7 @@ PanelWindow {
                             }
 
                             ColumnLayout {
-                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "bind"
+                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "bind" || modelData.kind === "power"
                                 Layout.fillWidth: true
                                 spacing: 2
 
@@ -750,6 +878,16 @@ PanelWindow {
                                     elide: Text.ElideRight
                                 }
                             }
+
+                            Text {
+                                visible: root.showAllHints && (modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power" || modelData.kind === "bind")
+                                text: modelData.kind === "cli" ? "⇧↵" : (modelData.kind === "bind" ? "view" : "↵")
+                                color: modelData.kind === "bind" ? theme.subText : theme.accent
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                font.bold: modelData.kind !== "bind"
+                                font.italic: modelData.kind === "bind"
+                            }
                         }
 
                         MouseArea {
@@ -767,11 +905,67 @@ PanelWindow {
                     }
                 }
 
+                LumenNetworkTab {
+                    id: networkTab
+                    theme: root.theme
+                    networkWidget: root.networkWidget
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "networks"
+                    onUnhandledKey: (event) => root.handleKey(event)
+                    onRequestSearchFocus: searchField.forceActiveFocus()
+                }
+
+                LumenBluetoothTab {
+                    id: bluetoothTab
+                    theme: root.theme
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "bluetooth"
+                }
+
+                LumenAudioTab {
+                    id: audioTab
+                    theme: root.theme
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "audio"
+                }
+
+                LumenNotifTab {
+                    id: notifTab
+                    theme: root.theme
+                    notifModel: root.notifModel
+                    dismissNotification: root.dismissNotification
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "notifs"
+                }
+
+                LumenPowerTab {
+                    id: powerTab
+                    theme: root.theme
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "power"
+                    onCloseRequested: root.close()
+                }
+            }
+
             Text {
                 Layout.fillWidth: true
-                text: root.showingCalc
-                    ? "↑↓ move    ↵ save    tab filter    esc close"
-                    : "↑↓ move    ↵ launch    ⇧↵ terminal    tab filter    esc close"
+                text: {
+                    if (root.showingCalc)
+                        return "↑↓ move    ↵ save    tab filter    esc close"
+                    if (root.parsedQuery.filter === "networks")
+                        return "↑↓ move    ↵ connect    del forget    tab filter    esc close"
+                    if (root.parsedQuery.filter === "bluetooth")
+                        return "↑↓ move    ↵ connect    del forget    tab filter    esc close"
+                    if (root.parsedQuery.filter === "audio")
+                        return "↑↓ move    ←→ volume    ↵ mute/select    tab filter    esc close"
+                    if (root.parsedQuery.filter === "notifs")
+                        return "↑↓ move    ↵ dismiss    del dismiss    tab filter    esc close"
+                    if (root.parsedQuery.filter === "power")
+                        return "↑↓ move    ↵ run    tab filter    esc close"
+                    if (root.parsedQuery.filter === "binds")
+                        return "↑↓ move    tab filter    esc close"
+                    return "↑↓ move    ↵ launch    ⇧↵ terminal    tab filter    esc close"
+                }
                 color: theme.subText
                 font.family: theme.fontFace
                 font.pixelSize: theme.fontSizeSm

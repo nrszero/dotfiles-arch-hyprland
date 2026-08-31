@@ -19,6 +19,7 @@ PanelWindow {
     required property var theme
     required property var notifModel
     required property var dismissNotification   // function(index) from shell
+    required property var networkWidget
     required property bool barVisible
     
     property int totalWorkspaces: 6
@@ -570,7 +571,7 @@ PanelWindow {
         id: networkPopup
         anchor.item: rightBarMod
         theme: root.theme
-        networkWidget: networkWidget
+        networkWidget: root.networkWidget
     }
     BluetoothPopup {
         id: bluetoothPopup
@@ -588,10 +589,5 @@ PanelWindow {
         id: powerButtonPopup
         anchor.item: rightBarMod
         theme: root.theme
-    }
-    
-    // === PROCESS'S ===
-    NetworkWidget {
-        id: networkWidget
     }
 }

@@ -112,6 +112,7 @@ Scope {
 
     PathIndex { id: pathIndex }
     BindIndex { id: bindIndex }
+    NetworkWidget { id: sharedNetwork }
 
     function setLumen(on) {
         lumenVisible = on
@@ -219,6 +220,9 @@ Scope {
                             lumenVisible: shellRoot.lumenVisible
                             pathStore: pathIndex
                             bindStore: bindIndex
+                            notifModel: sharedNotifList
+                            dismissNotification: shellRoot.dismissNotification
+                            networkWidget: sharedNetwork
                             onCloseRequested: shellRoot.setLumen(false)
                         }
 
@@ -228,6 +232,7 @@ Scope {
                             theme: appTheme
                             notifModel: sharedNotifList
                             dismissNotification: shellRoot.dismissNotification
+                            networkWidget: sharedNetwork
                             barVisible: shellRoot.barsVisible
                             
                             onInteractionStarted: shellRoot.registerInteraction()

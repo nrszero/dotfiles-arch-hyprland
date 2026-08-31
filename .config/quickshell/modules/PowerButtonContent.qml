@@ -45,194 +45,71 @@ Rectangle {
             }
         }
 
-        // Button List
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 6
-            
-            // Lock
-            Button {
-                id: lockBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                background: Rectangle {
-                    color: lockBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
-                    radius: theme.radius
-                    border.width: theme.borderWidth
-                    border.color: lockBtn.hovered ? theme.accent : "transparent"
-                }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 16
 
-                    Text { 
-                        text: "󰌾" // Lock icon
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeXl
-                        color: theme.text
-                    }
-                    Text { 
-                        text: "Lock"
-                        font.family: theme.fontFace
-                        font.pixelSize: 12
-                        color: theme.subText
-                        Layout.fillWidth: true
-                    }
-                }
-                onClicked: {
-                    // We wrap the script in bash -c so it properly expands the ~ to your home folder
-                    Quickshell.execDetached(["bash", "-c", "~/.config/quickshell/lock.sh"])
-                    targetWindow.visible = false
-                }
-            }
+            Repeater {
+                model: [
+                    { title: "Lock", subtitle: "Lock the session", icon: "󰌾", command: ["bash", "-c", "~/.config/quickshell/lock.sh"] },
+                    { title: "Logout", subtitle: "Exit Hyprland", icon: "󰍃", command: ["bash", "-c", "hyprctl dispatch 'hl.dsp.exit()'"] },
+                    { title: "Suspend", subtitle: "Sleep the machine", icon: "󰤄", command: ["systemctl", "suspend"] },
+                    { title: "Reboot", subtitle: "Restart the machine", icon: "󰜉", command: ["systemctl", "reboot"] },
+                    { title: "Shutdown", subtitle: "Power off the machine", icon: "󰐥", command: ["systemctl", "poweroff"] }
+                ]
 
-            // Logout
-            Button {
-                id: logoutBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                background: Rectangle {
-                    color: logoutBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
-                    radius: theme.radius
-                    border.width: theme.borderWidth
-                    border.color: logoutBtn.hovered ? theme.accent : "transparent"
-                }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 16
+                delegate: Button {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 52
+                    background: Rectangle {
+                        color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                        radius: theme.radius
+                        border.width: theme.borderWidth
+                        border.color: parent.hovered ? theme.accent : "transparent"
+                    }
+                    contentItem: RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        spacing: 16
 
-                    Text { 
-                        text: "󰍃" // Logout icon
-                        font.family: theme.fontFace 
-                        font.pixelSize: theme.fontSizeXl 
-                        color: theme.text 
-                    }
-                    Text { 
-                        text: "Logout"
-                        font.family: theme.fontFace 
-                        font.pixelSize: 12
-                        color: theme.subText 
-                        Layout.fillWidth: true
-                    }
-                }
-                onClicked: {
-                    Quickshell.execDetached(["bash", "-c", "hyprctl dispatch 'hl.dsp.exit()'"])
-                    targetWindow.visible = false
-                }
-            }
+                        Text {
+                            text: modelData.icon
+                            Layout.preferredWidth: 28
+                            horizontalAlignment: Text.AlignHCenter
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeXl
+                            color: theme.text
+                        }
 
-            // Suspend
-            Button {
-                id: suspendBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                background: Rectangle {
-                    color: suspendBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
-                    radius: theme.radius
-                    border.width: theme.borderWidth
-                    border.color: suspendBtn.hovered ? theme.accent : "transparent"
-                }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 16
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
 
-                    Text { 
-                        text: "󰤄"
-                        font.family: theme.fontFace
-                        font.pixelSize: theme.fontSizeXl
-                        color: theme.text
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.title
+                                color: theme.text
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                font.bold: true
+                                horizontalAlignment: Text.AlignLeft
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: modelData.subtitle
+                                color: theme.subText
+                                font.family: theme.fontFace
+                                font.pixelSize: theme.fontSizeSm
+                                horizontalAlignment: Text.AlignLeft
+                            }
+                        }
                     }
-                    Text { 
-                        text: "Suspend"
-                        font.family: theme.fontFace
-                        font.pixelSize: 12
-                        color: theme.subText
-                        Layout.fillWidth: true
+                    onClicked: {
+                        Quickshell.execDetached(modelData.command)
+                        targetWindow.visible = false
                     }
-                }
-                onClicked: {
-                    Quickshell.execDetached(["systemctl", "suspend"])
-                    targetWindow.visible = false
-                }
-            }
-
-            // Reboot
-            Button {
-                id: rebootBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                background: Rectangle {
-                    color: rebootBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
-                    radius: theme.radius
-                    border.width: theme.borderWidth
-                    border.color: rebootBtn.hovered ? theme.accent : "transparent"
-                }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 16
-
-                    Text { 
-                        text: "󰜉"
-                        font.family: theme.fontFace 
-                        font.pixelSize: theme.fontSizeXl 
-                        color: theme.text
-                    }
-                    Text { 
-                        text: "Reboot"
-                        font.family: theme.fontFace 
-                        font.pixelSize: 12
-                        color: theme.subText 
-                        Layout.fillWidth: true 
-                    }
-                }
-                onClicked: {
-                    Quickshell.execDetached(["systemctl", "reboot"])
-                    targetWindow.visible = false
-                }
-            }
-
-            // Shutdown
-            Button {
-                id: shutdownBtn
-                Layout.fillWidth: true
-                Layout.preferredHeight: 52
-                background: Rectangle {
-                    color: shutdownBtn.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
-                    radius: theme.radius
-                    border.width: theme.borderWidth
-                    border.color: shutdownBtn.hovered ? theme.accent : "transparent"
-                }
-                contentItem: RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 16
-
-                    Text { 
-                        text: "󰐥"
-                        font.family: theme.fontFace 
-                        font.pixelSize: theme.fontSizeXl 
-                        color: theme.text 
-                    }
-                    Text { 
-                        text: "Shutdown"
-                        font.family: theme.fontFace 
-                        font.pixelSize: 12
-                        color: theme.subText 
-                        Layout.fillWidth: true 
-                    }
-                }
-                onClicked: {
-                    Quickshell.execDetached(["systemctl", "poweroff"])
-                    targetWindow.visible = false
                 }
             }
         }
