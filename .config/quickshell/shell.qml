@@ -126,6 +126,7 @@ Scope {
 
     function setLumen(on) {
         if (on) {
+            lumenChip = "all"
             lumenQuery = ""
             pathIndex.refreshIfStale()
             bindIndex.refresh()
