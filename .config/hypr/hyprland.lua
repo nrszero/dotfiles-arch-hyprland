@@ -34,8 +34,12 @@ end
 
 local monitors = dofile("/etc/greetd/monitors.lua")
 local outputs = outputs_from_config(monitors)
-LEFT_MONITOR = outputs[1] and outputs[1].name or ""
-RIGHT_MONITOR = outputs[#outputs] and outputs[#outputs].name or LEFT_MONITOR
+MONITOR_LAYOUT = {}
+for _, m in ipairs(outputs) do
+    MONITOR_LAYOUT[#MONITOR_LAYOUT + 1] = m.name
+end
+LEFT_MONITOR = MONITOR_LAYOUT[1] or ""
+RIGHT_MONITOR = MONITOR_LAYOUT[#MONITOR_LAYOUT] or LEFT_MONITOR
 
 require("modules.autostart")
 require("modules.input")

@@ -52,7 +52,7 @@ Rectangle {
             Repeater {
                 model: [
                     { title: "Lock", subtitle: "Lock the session", icon: "󰌾", command: ["bash", "-c", "~/.config/quickshell/lock.sh"] },
-                    { title: "Logout", subtitle: "Exit Hyprland", icon: "󰍃", command: ["bash", "-c", "hyprctl dispatch 'hl.dsp.exit()'"] },
+                    { title: "Logout", subtitle: "End the session", icon: "󰍃", command: ["loginctl", "terminate-user", ""] },
                     { title: "Suspend", subtitle: "Sleep the machine", icon: "󰤄", command: ["systemctl", "suspend"] },
                     { title: "Reboot", subtitle: "Restart the machine", icon: "󰜉", command: ["systemctl", "reboot"] },
                     { title: "Shutdown", subtitle: "Power off the machine", icon: "󰐥", command: ["systemctl", "poweroff"] }

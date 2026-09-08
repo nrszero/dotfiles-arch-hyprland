@@ -4,7 +4,7 @@
 local per = WS_PER_MONITOR or 3
 local adopt_tries = 0
 
-local function sorted_monitors()
+local function live_monitors()
     local ok, mons = pcall(hl.get_monitors)
     if not ok or type(mons) ~= "table" then
         return {}
@@ -15,7 +15,30 @@ local function sorted_monitors()
             table.insert(list, m)
         end
     end
-    table.sort(list, function(a, b)
+    return list
+end
+
+-- IDs come from monitors.lua order, not live x/y. At login Hyprland can
+-- report a distinct but wrong layout (or 0x0), which used to pin 1–3 to DP-1.
+local function layout_names()
+    local names = {}
+    local seen = {}
+    if type(MONITOR_LAYOUT) == "table" then
+        for _, name in ipairs(MONITOR_LAYOUT) do
+            if type(name) == "string" and name ~= "" and not seen[name] then
+                names[#names + 1] = name
+                seen[name] = true
+            end
+        end
+    end
+    local extras = {}
+    for _, mon in ipairs(live_monitors()) do
+        if mon.name and not seen[mon.name] then
+            extras[#extras + 1] = mon
+            seen[mon.name] = true
+        end
+    end
+    table.sort(extras, function(a, b)
         local ax, ay = a.x or 0, a.y or 0
         local bx, by = b.x or 0, b.y or 0
         if ax ~= bx then
@@ -26,44 +49,36 @@ local function sorted_monitors()
         end
         return (a.name or "") < (b.name or "")
     end)
-    return list
+    for _, mon in ipairs(extras) do
+        names[#names + 1] = mon.name
+    end
+    return names
 end
 
-local function has_distinct_layout(mons)
-    if #mons <= 1 then
-        return true
+local function sorted_monitors()
+    local by_name = {}
+    for _, mon in ipairs(live_monitors()) do
+        by_name[mon.name] = mon
     end
-    for i = 2, #mons do
-        if (mons[i].x or 0) ~= (mons[1].x or 0) or (mons[i].y or 0) ~= (mons[1].y or 0) then
-            return true
+    local list = {}
+    for _, name in ipairs(layout_names()) do
+        if by_name[name] then
+            list[#list + 1] = by_name[name]
         end
     end
-    return false
+    return list
 end
 
 local function layout_index_of(mon)
     if not mon then
         return 0
     end
-    local mons = sorted_monitors()
-    for i, m in ipairs(mons) do
-        if m.name == mon.name then
+    for i, name in ipairs(layout_names()) do
+        if name == mon.name then
             return i - 1
         end
     end
     return 0
-end
-
-local function local_index(ws)
-    if not ws then
-        return 1
-    end
-    local id = ws.id or 1
-    local idx = id % per
-    if idx == 0 then
-        idx = per
-    end
-    return idx
 end
 
 local function global_id(mon_index, loc)
@@ -107,13 +122,12 @@ local function move_windows_to(ws, dest_gid)
 end
 
 local function setup_dynamic_workspaces()
-    local mons = sorted_monitors()
-    for i, mon in ipairs(mons) do
+    for i, name in ipairs(layout_names()) do
         local idx = i - 1
         for loc = 1, per do
             hl.workspace_rule({
                 workspace = tostring(global_id(idx, loc)),
-                monitor = mon.name,
+                monitor = name,
                 persistent = true,
                 default = (loc == 1),
             })
@@ -121,14 +135,15 @@ local function setup_dynamic_workspaces()
     end
 end
 
--- Hyprland still creates 1, 2, 3… across monitors before rules stick. Pull
--- stray windows onto this screen's 1–3 and show the default local workspace.
-local function adopt_monitor(mon, idx)
+-- Hyprland still creates 1, 2, 3… across monitors, then our rules move
+-- workspace 2 onto the left screen. Both bars then show local 2. On login,
+-- put each screen on its default local 1.
+local function adopt_monitor(mon, idx, force_default)
     local lo, hi = global_id(idx, 1), global_id(idx, per)
     local current = mon.active_workspace
     local cid = current and tonumber(current.id) or 0
     local in_range = cid >= lo and cid <= hi
-    local dest = in_range and cid or lo
+    local dest = (force_default or not in_range) and lo or cid
 
     local ok, wss = pcall(hl.get_workspaces)
     if ok and type(wss) == "table" then
@@ -142,7 +157,7 @@ local function adopt_monitor(mon, idx)
         end
     end
 
-    if not in_range then
+    if force_default or not in_range then
         hl.dispatch(hl.dsp.focus({ monitor = mon.name }))
         hl.dispatch(hl.dsp.focus({
             workspace = tostring(dest),
@@ -151,54 +166,54 @@ local function adopt_monitor(mon, idx)
     end
 end
 
-local function adopt_monitors()
+local function adopt_monitors(focus_first, force_default)
     local mons = sorted_monitors()
     if #mons == 0 then
         return
     end
     local keep = hl.get_active_monitor()
     for i, mon in ipairs(mons) do
-        adopt_monitor(mon, i - 1)
+        adopt_monitor(mon, i - 1, force_default)
     end
-    if keep then
-        hl.dispatch(hl.dsp.focus({ monitor = keep.name }))
+    local home = focus_first and mons[1] or keep
+    if home then
+        hl.dispatch(hl.dsp.focus({ monitor = home.name }))
     end
 end
 
-local function schedule_adopt()
+local function schedule_adopt(focus_first, force_default)
     hl.timer(function()
         adopt_tries = adopt_tries + 1
         local mons = sorted_monitors()
-        local ready = #mons > 0 and (has_distinct_layout(mons) or adopt_tries >= 20)
+        local ready = #mons > 0 or adopt_tries >= 20
         if not ready then
-            schedule_adopt()
+            schedule_adopt(focus_first, force_default)
             return
         end
         adopt_tries = 0
         setup_dynamic_workspaces()
-        adopt_monitors()
+        adopt_monitors(focus_first, force_default)
     end, { timeout = 50, type = "oneshot" })
 end
 
 hl.on("hyprland.start", function()
     setup_dynamic_workspaces()
     adopt_tries = 0
-    schedule_adopt()
+    schedule_adopt(true, true)
 end)
 hl.on("monitor.added", function()
     setup_dynamic_workspaces()
     adopt_tries = 0
-    schedule_adopt()
+    schedule_adopt(false, true)
 end)
 hl.on("monitor.removed", setup_dynamic_workspaces)
 hl.on("config.reloaded", function()
     adopt_tries = 0
     setup_dynamic_workspaces()
-    schedule_adopt()
+    schedule_adopt(false, false)
 end)
 
 setup_dynamic_workspaces()
-schedule_adopt()
 
 local function activate_local(loc)
     return function()

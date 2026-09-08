@@ -21,7 +21,7 @@ Item {
 
     readonly property var actions: [
         { key: "lock", title: "Lock", subtitle: "Lock the session", icon: "󰌾", command: ["bash", "-c", "~/.config/quickshell/lock.sh"] },
-        { key: "logout", title: "Logout", subtitle: "Exit Hyprland", icon: "󰍃", command: ["bash", "-c", "hyprctl dispatch 'hl.dsp.exit()'"] },
+        { key: "logout", title: "Logout", subtitle: "End the session", icon: "󰍃", command: ["loginctl", "terminate-user", ""] },
         { key: "suspend", title: "Suspend", subtitle: "Sleep the machine", icon: "󰤄", command: ["systemctl", "suspend"] },
         { key: "reboot", title: "Reboot", subtitle: "Restart the machine", icon: "󰜉", command: ["systemctl", "reboot"] },
         { key: "shutdown", title: "Shutdown", subtitle: "Power off the machine", icon: "󰐥", command: ["systemctl", "poweroff"] }

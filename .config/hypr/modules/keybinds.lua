@@ -5,12 +5,12 @@ hl.bind(MAIN_MOD .. " + E", hl.dsp.exec_cmd(FILE_MANAGER), { description = "Open
 hl.bind(MAIN_MOD .. " + C", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(MAIN_MOD .. " + W", hl.dsp.exec_cmd(BROWSER), { description = "Open Browser" })
 hl.bind(MAIN_MOD .. " + A", hl.dsp.exec_cmd("pavucontrol"), { description = "Open Audio Control" })
-hl.bind(MAIN_MOD .. " + N", hl.dsp.exec_cmd("kill $(cat $XDG_RUNTIME_DIR/awww_sleep.pid) 2>/dev/null"), { description = "Next wallpaper" })
-hl.bind(MAIN_MOD .. " + SHIFT + N", hl.dsp.exec_cmd("~/.config/hypr/scripts/cycle_wallpaper_folder.sh"), { description = "Next wallpaper folder" })
+hl.bind(MAIN_MOD .. " + N", hl.dsp.exec_cmd("/etc/awww/wallpaper-ctl.sh next"), { description = "Next wallpaper" })
+hl.bind(MAIN_MOD .. " + SHIFT + N", hl.dsp.exec_cmd("/etc/awww/wallpaper-ctl.sh next-folder"), { description = "Next wallpaper folder" })
 hl.bind(MAIN_MOD .. " + B", hl.dsp.global("quickshell:toggleBar"), { description = "Toggle autohide status bar" })
 hl.bind(MAIN_MOD .. " + Tab", hl.dsp.global("quickshell:workspacePreview"), { description = "Workspace preview" })
 hl.bind(MAIN_MOD .. " + M", hl.dsp.exec_cmd("~/.config/quickshell/lock.sh"), { description = "Lock screen" })
-hl.bind(MAIN_MOD .. " + SHIFT + M", hl.dsp.exit(), { description = "Exit Hyprland" })
+hl.bind(MAIN_MOD .. " + SHIFT + M", hl.dsp.exec_cmd('loginctl terminate-user ""'), { description = "Logout" })
 
 -- Layout
 hl.bind(MAIN_MOD .. " + V", hl.dsp.window.float(), { description = "Toggle window floating" })

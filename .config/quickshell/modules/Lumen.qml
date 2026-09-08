@@ -40,14 +40,15 @@ PanelWindow {
     readonly property bool isMathQuery: parsedQuery.filter === "calc" || isMathText(parsedQuery.needle)
     readonly property string mathExpression: parsedQuery.filter === "calc" ? parsedQuery.needle : parsedQuery.needle
     readonly property bool showingCalc: isMathQuery || (keepCalcHistory && query.trim() === "")
-    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs", "display"]
-    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power", "display"]
+    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs", "display", "wallpaper"]
+    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power", "display", "wallpaper"]
     readonly property var jumpTabs: [
         { label: "Networks", value: "networks", icon: "󰖩" },
         { label: "Bluetooth", value: "bluetooth", icon: "󰂯" },
         { label: "Audio", value: "audio", icon: "󰕾" },
         { label: "Notifs", value: "notifs", icon: "󰂚" },
-        { label: "Display", value: "display", icon: "󰍹" }
+        { label: "Display", value: "display", icon: "󰍹" },
+        { label: "Wallpaper", value: "wallpaper", icon: "󰸉" }
     ]
     readonly property bool showingSystemTab: !showingCalc && systemChips.indexOf(parsedQuery.filter) >= 0
     readonly property bool showAllHints: parsedQuery.filter === "all" && !showingCalc
@@ -59,6 +60,7 @@ PanelWindow {
         case "notifs": return notifTab
         case "power": return powerTab
         case "display": return displayTab
+        case "wallpaper": return wallpaperTab
         default: return null
         }
     }
@@ -781,7 +783,8 @@ PanelWindow {
                                 { label: "Bluetooth", value: "bluetooth", searchable: false },
                                 { label: "Audio", value: "audio", searchable: false },
                                 { label: "Notifs", value: "notifs", searchable: false },
-                                { label: "Display", value: "display", searchable: false }
+                                { label: "Display", value: "display", searchable: false },
+                                { label: "Wallpaper", value: "wallpaper", searchable: false }
                             ]
 
                             delegate: Item {
@@ -870,6 +873,7 @@ PanelWindow {
                     case "notifs": return 4
                     case "power": return 5
                     case "display": return 6
+                    case "wallpaper": return 7
                     default: return 0
                     }
                 }
@@ -1093,6 +1097,13 @@ PanelWindow {
                             root.resumeAfterAuth = true
                     }
                 }
+
+                LumenWallpaperTab {
+                    id: wallpaperTab
+                    theme: root.theme
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "wallpaper"
+                }
             }
 
             Text {
@@ -1112,6 +1123,8 @@ PanelWindow {
                         return "↑↓ move    ↵ run    tab filter    esc close"
                     if (root.parsedQuery.filter === "display")
                         return "←→↑↓ move    [ ] select    ↵ apply    tab filter    esc close"
+                    if (root.parsedQuery.filter === "wallpaper")
+                        return "↑↓ move    ↵ select    ←→ interval    tab filter    esc close"
                     if (root.parsedQuery.filter === "binds")
                         return "↑↓ move    tab filter    esc close"
                     return "↑↓ move    ↵ launch    ⇧↵ terminal    tab filter    esc close"
