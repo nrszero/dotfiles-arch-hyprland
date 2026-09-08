@@ -14,6 +14,10 @@ PanelWindow {
     required property var screenModel
     required property var theme
     required property bool lumenVisible
+    required property string chip
+    required property string query
+    required property var setChip
+    required property var setQuery
     required property PathIndex pathStore
     required property BindIndex bindStore
     required property var notifModel
@@ -27,8 +31,6 @@ PanelWindow {
         return !!(fm && fm.name && root.screenModel && fm.name === root.screenModel.name)
     }
 
-    property string query: ""
-    property string chip: "all"
     property var history: ({})
     property var calcHistory: []
     property bool keepCalcHistory: false
@@ -346,7 +348,7 @@ PanelWindow {
     function cycleChip(delta) {
         const i = chipOrder.indexOf(root.chip)
         const next = (i + delta + chipOrder.length) % chipOrder.length
-        root.chip = chipOrder[next]
+        root.setChip(chipOrder[next])
         root.keepCalcHistory = false
         root.resetSelection()
     }
@@ -394,7 +396,7 @@ PanelWindow {
         root.calcHistory = next
         root.keepCalcHistory = true
         copyResult()
-        root.query = ""
+        root.setQuery("")
         root.resetSelection()
         searchField.forceActiveFocus()
     }
@@ -487,7 +489,7 @@ PanelWindow {
         if (root.showingCalc) {
             const calcItem = selectedCalcItem()
             if (calcItem && calcItem.live === false) {
-                root.query = calcItem.expression
+                root.setQuery(calcItem.expression)
                 root.resetSelection()
                 searchField.forceActiveFocus()
                 return
@@ -522,11 +524,9 @@ PanelWindow {
     function openJumpTab(item) {
         if (!item || !item.chip)
             return
-        root.chip = item.chip
+        root.setChip(item.chip)
         root.keepCalcHistory = false
-        root.query = ""
-        if (searchField.text !== "")
-            searchField.text = ""
+        root.setQuery("")
         root.resetSelection()
         searchField.forceActiveFocus()
     }
@@ -566,7 +566,7 @@ PanelWindow {
         if (visible) {
             if (root.resumeAfterAuth) {
                 root.resumeAfterAuth = false
-                chip = "display"
+                root.setChip("display")
                 Qt.callLater(() => {
                     if (displayTab && displayTab.resync)
                         displayTab.resync()
@@ -574,8 +574,6 @@ PanelWindow {
                 })
                 return
             }
-            query = ""
-            chip = "all"
             selectedIndex = 0
             keepCalcHistory = false
             if (pathStore && pathStore.refreshIfStale)
@@ -701,7 +699,7 @@ PanelWindow {
                         font.pixelSize: theme.fontSizeSm
                     }
                     onTextChanged: {
-                        root.query = text
+                        root.setQuery(text)
                         root.resetSelection()
                     }
                     Keys.onPressed: (event) => root.handleKey(event)
@@ -825,7 +823,7 @@ PanelWindow {
                                         anchors.fill: parent
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            root.chip = modelData.value
+                                            root.setChip(modelData.value)
                                             root.keepCalcHistory = false
                                             root.resetSelection()
                                             searchField.forceActiveFocus()

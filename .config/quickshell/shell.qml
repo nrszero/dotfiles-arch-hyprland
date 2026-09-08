@@ -109,19 +109,30 @@ Scope {
 
     property bool workspacePreviewVisible: false
     property bool lumenVisible: false
+    property string lumenChip: "all"
+    property string lumenQuery: ""
 
     PathIndex { id: pathIndex }
     BindIndex { id: bindIndex }
     NetworkWidget { id: sharedNetwork }
 
+    function setLumenChip(value) {
+        lumenChip = value
+    }
+
+    function setLumenQuery(value) {
+        lumenQuery = value
+    }
+
     function setLumen(on) {
-        lumenVisible = on
         if (on) {
+            lumenQuery = ""
             pathIndex.refreshIfStale()
             bindIndex.refresh()
             if (workspacePreviewVisible)
                 workspacePreviewVisible = false
         }
+        lumenVisible = on
     }
 
     function setWorkspacePreview(on) {
@@ -220,6 +231,10 @@ Scope {
                             screenModel: wrapper.modelData
                             theme: appTheme
                             lumenVisible: shellRoot.lumenVisible
+                            chip: shellRoot.lumenChip
+                            query: shellRoot.lumenQuery
+                            setChip: shellRoot.setLumenChip
+                            setQuery: shellRoot.setLumenQuery
                             pathStore: pathIndex
                             bindStore: bindIndex
                             notifModel: sharedNotifList
