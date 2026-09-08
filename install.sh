@@ -259,19 +259,22 @@ stow_wallpapers() {
 
 generate_monitor_config() {
     local monitor_file="/etc/greetd/monitors.lua"
+    sudo mkdir -p /etc/greetd
     if [ ! -f "$monitor_file" ]; then
         log "Generating system monitor override file (monitors.lua)..."
-        cat << 'EOF' > "$monitor_file"
+        sudo tee "$monitor_file" > /dev/null << 'EOF'
 return {
-    -- Check connected monitors with hyprctl monitors.
-    -- Edit the below to fit your setup.
+    -- After login, arrange displays in Lumen (SUPER + SPACE → Display).
+    -- Or edit this file and run: hyprctl reload
+    -- mode: highres, highrr, preferred, or WxH@Hz (only one; Hyprland cannot combine them).
+    -- Check connected outputs with: hyprctl monitors
 
-    -- Standard Laptop config:
-    -- primary = {name = "eDP-1", mode = "preferred", position = "0x0", scale = 1, bitdepth = 8 }
+    -- Laptop example:
+    -- { name = "eDP-1", mode = "highrr", position = "auto", scale = 1, bitdepth = 8 },
 
-    -- Standard Desktop config:
-    primary = { name = "HDMI-A-1", mode = "highrr", position = "0x0", scale = 1, bitdepth = 10 },
-    secondary = { name = "DP-1", mode = "highrr", position = "2560x0", scale = 1, bitdepth = 10 }
+    -- Desktop example (highrr = max refresh; Hyprland places outputs with auto):
+    { name = "HDMI-A-1", mode = "highrr", position = "auto", scale = 1, bitdepth = 10 },
+    { name = "DP-1", mode = "highrr", position = "auto", scale = 1, bitdepth = 10 }
 }
 EOF
         sudo chmod 644 "$monitor_file"
@@ -294,6 +297,7 @@ main() {
     echo ""
     success "Dotfiles installed successfully!"
     sub_log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."
+    sub_log "Configure monitors in /etc/greetd/monitors.lua, or after login use Lumen (SUPER + SPACE) → Display."
 }
 
 main "$@"

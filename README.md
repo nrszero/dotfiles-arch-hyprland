@@ -77,9 +77,9 @@ When prompted, **choose option 1** to install all required packages.
 
 **Important**: You may need to adjust your monitor configuration before first login.
 
-Edit this file to match your display setup:
-- `/etc/greetd/monitors.lua` - Global monitor configuration
-- Then run `hyprctl reload` to apply
+Arrange displays in Lumen after login (`SUPER + SPACE` → **Display**), or edit the system file:
+- `/etc/greetd/monitors.lua` — global monitor layout (not overwritten by git updates)
+- Then run `hyprctl reload` if you edited the file by hand
 
 If you change files in ~/dotfiles/etc run install.sh again:
 ```bash
@@ -104,7 +104,7 @@ SKIP_PACKAGES=1 ./install.sh
 ### Troubleshooting
 
 **Greetd login screen not loading**
-- Check monitor configuration in the post-install step above.
+- Arrange monitors in Lumen (`SUPER + SPACE` → Display) or edit `/etc/greetd/monitors.lua` as in the post-install step above.
 - Verify greetd service is enabled: `sudo systemctl enable greetd`.
 
 ## ⚙️ Configuration Highlights

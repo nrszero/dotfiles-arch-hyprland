@@ -38,8 +38,15 @@ PanelWindow {
     readonly property bool isMathQuery: parsedQuery.filter === "calc" || isMathText(parsedQuery.needle)
     readonly property string mathExpression: parsedQuery.filter === "calc" ? parsedQuery.needle : parsedQuery.needle
     readonly property bool showingCalc: isMathQuery || (keepCalcHistory && query.trim() === "")
-    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs"]
-    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power"]
+    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs", "display"]
+    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power", "display"]
+    readonly property var jumpTabs: [
+        { label: "Networks", value: "networks", icon: "󰖩" },
+        { label: "Bluetooth", value: "bluetooth", icon: "󰂯" },
+        { label: "Audio", value: "audio", icon: "󰕾" },
+        { label: "Notifs", value: "notifs", icon: "󰂚" },
+        { label: "Display", value: "display", icon: "󰍹" }
+    ]
     readonly property bool showingSystemTab: !showingCalc && systemChips.indexOf(parsedQuery.filter) >= 0
     readonly property bool showAllHints: parsedQuery.filter === "all" && !showingCalc
     readonly property var activeTab: {
@@ -49,12 +56,13 @@ PanelWindow {
         case "audio": return audioTab
         case "notifs": return notifTab
         case "power": return powerTab
+        case "display": return displayTab
         default: return null
         }
     }
 
     screen: screenModel
-    visible: lumenVisible && isOnFocusedMonitor
+    visible: lumenVisible && isOnFocusedMonitor && !displayTab.yieldForAuth
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
@@ -149,7 +157,9 @@ PanelWindow {
                 if (!e || !e.name)
                     continue
                 const key = "app:" + (e.id || e.name)
-                const fields = [e.name, e.genericName || "", e.comment || ""]
+                const fields = [e.name, e.genericName || ""]
+                if (!isSteamGameShortcut(e))
+                    fields.push(e.comment || "")
                 if (e.keywords) {
                     for (let k = 0; k < e.keywords.length; k++)
                         fields.push(e.keywords[k])
@@ -252,6 +262,32 @@ PanelWindow {
                     score: s,
                     recency: 0,
                     command: a.command
+                })
+            }
+        }
+
+        if (filter === "all" && needle) {
+            const tabs = root.jumpTabs
+            for (let i = 0; i < tabs.length; i++) {
+                const t = tabs[i]
+                const s = bestScore([t.label, t.value], needle)
+                if (s <= 0)
+                    continue
+                items.push({
+                    key: "tab:" + t.value,
+                    kind: "tab",
+                    title: t.label,
+                    subtitle: "Open " + t.label + " tab",
+                    iconName: t.icon,
+                    appId: "",
+                    triggerText: "",
+                    cliPath: "",
+                    dispatcher: "",
+                    arg: "",
+                    chip: t.value,
+                    score: s + 8,
+                    recency: 0,
+                    command: []
                 })
             }
         }
@@ -363,24 +399,63 @@ PanelWindow {
         searchField.forceActiveFocus()
     }
 
+    function commandHasSteamUrl(cmd) {
+        for (let i = 0; i < cmd.length; i++) {
+            if (("" + cmd[i]).indexOf("steam://") === 0)
+                return true
+        }
+        return false
+    }
+
+    function isSteamGameShortcut(entry) {
+        const cmd = (entry && entry.command) || []
+        for (let i = 0; i < cmd.length; i++) {
+            const a = ("" + cmd[i]).toLowerCase()
+            if (a.indexOf("steam://rungameid") >= 0 || a.indexOf("steam://run/") >= 0)
+                return true
+        }
+        return false
+    }
+
+    function isSteamClient(entry, cmd) {
+        const id = ("" + (entry.id || "")).toLowerCase()
+        if (id === "steam" || id === "steam-native" || id === "com.valvesoftware.steam")
+            return true
+        for (let i = 0; i < cmd.length; i++) {
+            const a = ("" + cmd[i]).toLowerCase()
+            if (a.indexOf("steam://rungameid") >= 0 || a.indexOf("steam://run/") >= 0)
+                return false
+        }
+        if (("" + (entry.name || "")).toLowerCase() !== "steam" || !cmd.length)
+            return false
+        const bin = ("" + cmd[0]).toLowerCase()
+        return bin === "steam" || bin.endsWith("/steam") || bin.indexOf("com.valvesoftware.steam") >= 0
+    }
+
+    function withSteamClientUrl(cmd) {
+        // Bare `steam` resumes the last steam://rungameid; open the library instead.
+        if (!commandHasSteamUrl(cmd))
+            cmd.push("steam://open/games")
+        return cmd
+    }
+
     function launchApp(item, inTerminal) {
         const entry = item.appId ? DesktopEntries.byId(item.appId) : DesktopEntries.heuristicLookup(item.title)
         if (!entry) {
             console.error("Lumen: desktop entry not found for " + item.title)
             return
         }
-        if (inTerminal || entry.runInTerminal) {
-            const cmd = ["kitty", "-e"]
-            const parts = entry.command || []
-            for (let i = 0; i < parts.length; i++)
-                cmd.push(parts[i])
-            Quickshell.execDetached({
-                command: cmd,
-                workingDirectory: entry.workingDirectory || ""
-            })
-        } else {
-            entry.execute()
-        }
+        const parts = []
+        const src = entry.command || []
+        for (let i = 0; i < src.length; i++)
+            parts.push(src[i])
+        if (isSteamClient(entry, parts))
+            withSteamClientUrl(parts)
+        const cmd = (inTerminal || entry.runInTerminal) ? ["kitty", "-e"].concat(parts) : parts
+        Quickshell.execDetached({
+            command: cmd,
+            workingDirectory: entry.workingDirectory || ""
+        })
         recordHistory(item.key)
         root.close()
     }
@@ -388,10 +463,11 @@ PanelWindow {
     function launchCli(item, inTerminal) {
         if (!item.cliPath)
             return
-        if (inTerminal)
-            Quickshell.execDetached(["kitty", "-e", item.cliPath])
-        else
-            Quickshell.execDetached([item.cliPath])
+        const base = (item.title || item.cliPath || "").split("/").pop()
+        let cmd = inTerminal ? ["kitty", "-e", item.cliPath] : [item.cliPath]
+        if (base === "steam")
+            cmd = withSteamClientUrl(cmd)
+        Quickshell.execDetached(cmd)
         recordHistory(item.key)
         searchField.forceActiveFocus()
     }
@@ -420,16 +496,15 @@ PanelWindow {
                 commitCalc()
             return
         }
-        let item = null
-        if (resultsView.currentItem && resultsView.currentItem.modelData)
-            item = resultsView.currentItem.modelData
-        else if (filtered.values && selectedIndex >= 0 && selectedIndex < filtered.values.length)
-            item = filtered.values[selectedIndex]
+        const rows = filtered.values
+        const item = (rows && selectedIndex >= 0 && selectedIndex < rows.length) ? rows[selectedIndex] : null
         if (!item)
             return
         if (item.kind === "bind")
             return
-        if (item.kind === "app")
+        if (item.kind === "tab")
+            openJumpTab(item)
+        else if (item.kind === "app")
             launchApp(item, inTerminal)
         else if (item.kind === "cli")
             launchCli(item, inTerminal)
@@ -442,6 +517,18 @@ PanelWindow {
             return
         Quickshell.execDetached(item.command)
         root.close()
+    }
+
+    function openJumpTab(item) {
+        if (!item || !item.chip)
+            return
+        root.chip = item.chip
+        root.keepCalcHistory = false
+        root.query = ""
+        if (searchField.text !== "")
+            searchField.text = ""
+        root.resetSelection()
+        searchField.forceActiveFocus()
     }
 
     function handleKey(event) {
@@ -473,8 +560,20 @@ PanelWindow {
         }
     }
 
+    property bool resumeAfterAuth: false
+
     onVisibleChanged: {
         if (visible) {
+            if (root.resumeAfterAuth) {
+                root.resumeAfterAuth = false
+                chip = "display"
+                Qt.callLater(() => {
+                    if (displayTab && displayTab.resync)
+                        displayTab.resync()
+                    searchField.forceActiveFocus()
+                })
+                return
+            }
             query = ""
             chip = "all"
             selectedIndex = 0
@@ -634,90 +733,129 @@ PanelWindow {
 
             RowLayout {
                 Layout.fillWidth: true
+                Layout.preferredHeight: 28
+                Layout.maximumHeight: 28
                 spacing: 6
 
-                Flow {
+                Flickable {
+                    id: chipFlick
                     Layout.fillWidth: true
-                    spacing: 6
+                    Layout.fillHeight: true
+                    clip: true
+                    contentWidth: Math.max(width, chipRow.implicitWidth)
+                    contentHeight: height
+                    flickableDirection: Flickable.HorizontalFlick
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    Repeater {
-                        model: [
-                            { label: "All", value: "all", searchable: true },
-                            { label: "Apps", value: "apps", searchable: true },
-                            { label: "CLI", value: "cli", searchable: true },
-                            { label: "Binds", value: "binds", searchable: true },
-                            { label: "Power", value: "power", searchable: true },
-                            { divider: true },
-                            { label: "Networks", value: "networks", searchable: false },
-                            { label: "Bluetooth", value: "bluetooth", searchable: false },
-                            { label: "Audio", value: "audio", searchable: false },
-                            { label: "Notifs", value: "notifs", searchable: false }
-                        ]
+                    function scrollChipIntoView(value) {
+                        for (let i = 0; i < chipRepeater.count; i++) {
+                            const it = chipRepeater.itemAt(i)
+                            if (!it || it.isDivider || !it.modelData || it.modelData.value !== value)
+                                continue
+                            const pad = 6
+                            const left = it.x - pad
+                            const right = it.x + it.width + pad
+                            const viewLeft = contentX
+                            const viewRight = contentX + width
+                            if (left < viewLeft)
+                                contentX = Math.max(0, left)
+                            else if (right > viewRight)
+                                contentX = Math.max(0, Math.min(Math.max(0, contentWidth - width), right - width))
+                            return
+                        }
+                    }
 
-                        delegate: Item {
-                            required property var modelData
-                            readonly property bool isDivider: !!modelData.divider
-                            readonly property bool selected: !isDivider && root.chip === modelData.value
-                            readonly property bool searchable: !isDivider && !!modelData.searchable
-                            implicitHeight: 28
-                            implicitWidth: isDivider ? 9 : chipText.implicitWidth + 16
+                    Row {
+                        id: chipRow
+                        spacing: 6
+                        height: chipFlick.height
 
-                            Rectangle {
-                                visible: isDivider
-                                width: 1
-                                height: 16
-                                anchors.centerIn: parent
-                                color: theme.borderColor
-                            }
+                        Repeater {
+                            id: chipRepeater
+                            model: [
+                                { label: "All", value: "all", searchable: true },
+                                { label: "Apps", value: "apps", searchable: true },
+                                { label: "CLI", value: "cli", searchable: true },
+                                { label: "Binds", value: "binds", searchable: true },
+                                { label: "Power", value: "power", searchable: true },
+                                { divider: true },
+                                { label: "Networks", value: "networks", searchable: false },
+                                { label: "Bluetooth", value: "bluetooth", searchable: false },
+                                { label: "Audio", value: "audio", searchable: false },
+                                { label: "Notifs", value: "notifs", searchable: false },
+                                { label: "Display", value: "display", searchable: false }
+                            ]
 
-                            Rectangle {
-                                visible: !isDivider
-                                anchors.fill: parent
-                                radius: theme.radius
-                                color: selected ? theme.accent : theme.surface
-                                border.width: searchable && !selected ? theme.borderWidth : 0
-                                border.color: searchable && !selected ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.55) : "transparent"
+                            delegate: Item {
+                                required property var modelData
+                                readonly property bool isDivider: !!modelData.divider
+                                readonly property bool selected: !isDivider && root.chip === modelData.value
+                                readonly property bool searchable: !isDivider && !!modelData.searchable
+                                height: chipRow.height
+                                implicitWidth: isDivider ? 9 : chipText.implicitWidth + 16
+                                width: implicitWidth
 
-                                Text {
-                                    id: chipText
+                                Rectangle {
+                                    visible: isDivider
+                                    width: 1
+                                    height: 16
                                     anchors.centerIn: parent
-                                    text: modelData.label || ""
-                                    color: selected || searchable ? theme.text : theme.subText
-                                    font.family: theme.fontFace
-                                    font.pixelSize: theme.fontSizeSm
-                                    font.bold: selected
+                                    color: theme.borderColor
                                 }
 
-                                MouseArea {
+                                Rectangle {
+                                    visible: !isDivider
                                     anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.chip = modelData.value
-                                        root.keepCalcHistory = false
-                                        root.resetSelection()
-                                        searchField.forceActiveFocus()
+                                    radius: theme.radius
+                                    color: selected ? theme.accent : theme.surface
+                                    border.width: searchable && !selected ? theme.borderWidth : 0
+                                    border.color: searchable && !selected ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.55) : "transparent"
+
+                                    Text {
+                                        id: chipText
+                                        anchors.centerIn: parent
+                                        text: modelData.label || ""
+                                        color: selected || searchable ? theme.text : theme.subText
+                                        font.family: theme.fontFace
+                                        font.pixelSize: theme.fontSizeSm
+                                        font.bold: selected
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.chip = modelData.value
+                                            root.keepCalcHistory = false
+                                            root.resetSelection()
+                                            searchField.forceActiveFocus()
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                Text {
-                    text: {
-                        if (root.showingCalc) {
-                            const n = root.calcHistory.length
-                            return n + " saved"
+                    WheelHandler {
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        onWheel: (event) => {
+                            const maxX = Math.max(0, chipFlick.contentWidth - chipFlick.width)
+                            if (maxX <= 0)
+                                return
+                            const dx = event.pixelDelta.x !== 0
+                                ? event.pixelDelta.x
+                                : ((event.angleDelta.x !== 0 ? event.angleDelta.x : event.angleDelta.y) / 8)
+                            chipFlick.contentX = Math.max(0, Math.min(maxX, chipFlick.contentX - dx))
+                            event.accepted = true
                         }
-                        if (root.showingSystemTab && root.activeTab)
-                            return root.activeTab.statusText
-                        const n = filtered.values ? filtered.values.length : 0
-                        return n + (n === 1 ? " result" : " results")
                     }
-                    Layout.alignment: Qt.AlignTop
-                    color: theme.subText
-                    font.family: theme.fontFace
-                    font.pixelSize: theme.fontSizeSm
+
+                    Connections {
+                        target: root
+                        function onChipChanged() {
+                            Qt.callLater(() => chipFlick.scrollChipIntoView(root.chip))
+                        }
+                    }
                 }
             }
 
@@ -733,6 +871,7 @@ PanelWindow {
                     case "audio": return 3
                     case "notifs": return 4
                     case "power": return 5
+                    case "display": return 6
                     default: return 0
                     }
                 }
@@ -804,7 +943,7 @@ PanelWindow {
                             Item {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power"
+                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power" || modelData.kind === "tab"
 
                                 IconImage {
                                     id: appIcon
@@ -836,7 +975,7 @@ PanelWindow {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    visible: modelData.kind === "power"
+                                    visible: modelData.kind === "power" || modelData.kind === "tab"
                                     text: modelData.iconName || ""
                                     color: theme.accent
                                     font.family: theme.fontFace
@@ -854,7 +993,7 @@ PanelWindow {
                             }
 
                             ColumnLayout {
-                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "bind" || modelData.kind === "power"
+                                visible: modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "bind" || modelData.kind === "power" || modelData.kind === "tab"
                                 Layout.fillWidth: true
                                 spacing: 2
 
@@ -880,7 +1019,7 @@ PanelWindow {
                             }
 
                             Text {
-                                visible: root.showAllHints && (modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power" || modelData.kind === "bind")
+                                visible: root.showAllHints && (modelData.kind === "app" || modelData.kind === "cli" || modelData.kind === "power" || modelData.kind === "bind" || modelData.kind === "tab")
                                 text: modelData.kind === "cli" ? "⇧↵" : (modelData.kind === "bind" ? "view" : "↵")
                                 color: modelData.kind === "bind" ? theme.subText : theme.accent
                                 font.family: theme.fontFace
@@ -945,6 +1084,17 @@ PanelWindow {
                     tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "power"
                     onCloseRequested: root.close()
                 }
+
+                LumenDisplayTab {
+                    id: displayTab
+                    theme: root.theme
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "display"
+                    onYieldForAuthChanged: {
+                        if (yieldForAuth)
+                            root.resumeAfterAuth = true
+                    }
+                }
             }
 
             Text {
@@ -962,6 +1112,8 @@ PanelWindow {
                         return "↑↓ move    ↵ dismiss    del dismiss    tab filter    esc close"
                     if (root.parsedQuery.filter === "power")
                         return "↑↓ move    ↵ run    tab filter    esc close"
+                    if (root.parsedQuery.filter === "display")
+                        return "←→↑↓ move    [ ] select    ↵ apply    tab filter    esc close"
                     if (root.parsedQuery.filter === "binds")
                         return "↑↓ move    tab filter    esc close"
                     return "↑↓ move    ↵ launch    ⇧↵ terminal    tab filter    esc close"

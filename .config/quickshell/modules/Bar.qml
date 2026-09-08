@@ -22,7 +22,14 @@ PanelWindow {
     required property var networkWidget
     required property bool barVisible
     
-    property int totalWorkspaces: 6
+    readonly property int wsPerMonitor: 3
+    function localIndexOf(id) {
+        const n = root.wsPerMonitor
+        let idx = Number(id) % n
+        if (idx === 0)
+            idx = n
+        return idx
+    }
     property var hMonitor: {
         if (!Hyprland.monitors || !Hyprland.monitors.values || !root.screenModel) return null;
         // Guard: screenModel may temporarily be a placeholder during output changes.
@@ -35,8 +42,28 @@ PanelWindow {
         }
         return null;
     }
-    property int monitorIndex: hMonitor ? hMonitor.id : 0
-    property int baseWs: monitorIndex
+    readonly property int layoutIndex: {
+        const _m = root.hMonitor
+        if (!Hyprland.monitors || !Hyprland.monitors.values || !_m)
+            return 0
+        const list = []
+        for (let m of Hyprland.monitors.values) {
+            if (m && m.name)
+                list.push(m)
+        }
+        list.sort((a, b) => {
+            if (a.x !== b.x)
+                return a.x - b.x
+            if (a.y !== b.y)
+                return a.y - b.y
+            return String(a.name).localeCompare(String(b.name))
+        })
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].name === _m.name)
+                return i
+        }
+        return 0
+    }
     property bool hasFullscreen: false
     property bool isInteractive: barHover.hovered ||
                                  networkPopup.visible ||
@@ -84,20 +111,7 @@ PanelWindow {
 
     Component.onCompleted: {
         Hyprland.refreshWorkspaces()
-        updateTotalWorkspaces()
         fsCheckTimer.restart()
-    }
-
-    function updateTotalWorkspaces() {
-        if (!Hyprland.workspaces || !Hyprland.workspaces.values) {
-            totalWorkspaces = 6
-            return
-        }
-        let maxId = 0
-        for (let ws of Hyprland.workspaces.values) {
-            if (ws && ws.id > 0 && ws.id > maxId) maxId = ws.id
-        }
-        totalWorkspaces = maxId > 0 ? maxId : 6
     }
     
     function checkFullscreen() {
@@ -129,7 +143,6 @@ PanelWindow {
         repeat: false
         onTriggered: {
             Hyprland.refreshWorkspaces()
-            updateTotalWorkspaces()
         }
     }
     
@@ -146,7 +159,6 @@ PanelWindow {
             if (event.name === "workspace" || event.name === "createworkspace" ||
                 event.name === "destroyworkspace" || event.name === "focusedmon") {
                 Hyprland.refreshWorkspaces()
-                updateTotalWorkspaces()
                 fsCheckTimer.restart()
             } else if (event.name === "configreloaded") {
                 reloadTimer.restart()
@@ -236,18 +248,32 @@ PanelWindow {
                 spacing: theme.spacing
                 
                 Repeater {
-                    model: root.totalWorkspaces
+                    model: root.wsPerMonitor
                     delegate: Rectangle {
                         width: isActive ? 28 : 22
                         height: 22
                         radius: theme.radius
  
-                        property int wsId: index + 1
-                        property bool isActive: Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id === wsId
+                        property int localId: index + 1
+                        property int wsId: root.layoutIndex * root.wsPerMonitor + localId
+                        property bool isActive: {
+                            const aw = root.hMonitor && root.hMonitor.activeWorkspace
+                            if (!aw)
+                                return false
+                            if (aw.id === wsId)
+                                return true
+                            return root.localIndexOf(aw.id) === localId
+                        }
                         property bool hasWindows: {
                             if (!Hyprland.toplevels.values) return false
                             for (let t of Hyprland.toplevels.values) {
-                                if (t.workspace && t.workspace.id === wsId) return true
+                                if (!t.workspace)
+                                    continue
+                                if (t.workspace.id === wsId)
+                                    return true
+                                const onThis = root.hMonitor && t.monitor && t.monitor.name === root.hMonitor.name
+                                if (onThis && root.localIndexOf(t.workspace.id) === localId)
+                                    return true
                             }
                             return false
                         }
@@ -265,7 +291,7 @@ PanelWindow {
                             font.family: theme.fontFace
                             font.pixelSize: theme.fontSizeSm
                             font.bold: isActive
-                            text: index + 1
+                            text: localId
                             visible: isActive || hasWindows
                         }
                     
@@ -273,7 +299,12 @@ PanelWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: Hyprland.dispatch(`hl.dsp.focus({workspace = ${index + 1}})`)
+                            onClicked: {
+                                const mon = root.hMonitor && root.hMonitor.name
+                                if (mon)
+                                    Hyprland.dispatch(`hl.dsp.focus({ monitor = "${mon}" })`)
+                                Hyprland.dispatch(`hl.dsp.focus({ workspace = ${wsId}, on_current_monitor = true })`)
+                            }
                         }
                     }
                 }

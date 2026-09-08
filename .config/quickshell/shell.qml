@@ -130,6 +130,8 @@ Scope {
             Hyprland.refreshToplevels()
             Hyprland.refreshWorkspaces()
             Hyprland.refreshMonitors()
+            if (lumenVisible)
+                setLumen(false)
             if (!persistentBarsVisible) {
                 temporaryBarVisible = true
                 barPeekTimer.stop()

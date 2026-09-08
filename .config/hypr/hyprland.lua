@@ -4,11 +4,38 @@ MAIN_MOD = "SUPER"
 TERMINAL = "kitty"
 BROWSER = "google-chrome-stable --ozone-platform=wayland --ozone-platform-hint=auto"
 FILE_MANAGER = "kitty yazi"
-WORKSPACES = 6 -- Move windows to a workspace that will exist if making value smaller.
+WS_PER_MONITOR = 3
+
+local function parse_xy(pos)
+    if type(pos) ~= "string" then
+        return 0, 0
+    end
+    local x, y = pos:match("^(%-?%d+)x(%-?%d+)$")
+    return tonumber(x) or 0, tonumber(y) or 0
+end
+
+local function outputs_from_config(monitors)
+    local list = {}
+    for _, m in ipairs(monitors) do
+        if type(m) == "table" and m.name then
+            table.insert(list, m)
+        end
+    end
+    table.sort(list, function(a, b)
+        local ax, ay = parse_xy(a.position)
+        local bx, by = parse_xy(b.position)
+        if ax ~= bx then
+            return ax < bx
+        end
+        return ay < by
+    end)
+    return list
+end
 
 local monitors = dofile("/etc/greetd/monitors.lua")
-LEFT_MONITOR = monitors.primary and monitors.primary.name or ""
-RIGHT_MONITOR = monitors.secondary and monitors.secondary.name or ""
+local outputs = outputs_from_config(monitors)
+LEFT_MONITOR = outputs[1] and outputs[1].name or ""
+RIGHT_MONITOR = outputs[#outputs] and outputs[#outputs].name or LEFT_MONITOR
 
 require("modules.autostart")
 require("modules.input")
@@ -21,32 +48,22 @@ require("modules.environment")
 ---- MONITORS ----
 ------------------
 -- See https://wiki.hypr.land/Configuring/Monitors/
+-- mode is one of: highres, highrr, preferred, or WxH@Hz (Hyprland cannot combine keywords).
 
-if monitors.primary then
+for _, m in ipairs(outputs) do
     hl.monitor({
-        output   = monitors.primary.name,
-        mode     = monitors.primary.mode or "preferred",
-        position = monitors.primary.position or "auto",
-        scale    = monitors.primary.scale or 1,
-        bitdepth = monitors.primary.bitdepth or 8,
-    })
-end
-
-if monitors.secondary then
-    hl.monitor({
-        output   = monitors.secondary.name,
-        mode     = monitors.secondary.mode or "preferred",
-        position = monitors.secondary.position or "auto",
-        scale    = monitors.secondary.scale or 1,
-        bitdepth = monitors.secondary.bitdepth or 8,
+        output   = m.name,
+        mode     = m.mode or "highrr",
+        position = m.position or "auto",
+        scale    = m.scale or 1,
+        bitdepth = m.bitdepth or 8,
     })
 end
 
 -- Fallback for any other random monitors you plug in
 hl.monitor({
     output   = "",
-    mode     = "preferred",
+    mode     = "highrr",
     position = "auto",
     scale    = 1,
 })
-

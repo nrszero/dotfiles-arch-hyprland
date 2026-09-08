@@ -32,21 +32,7 @@ hl.bind(MAIN_MOD .. " + L", hl.dsp.focus({ direction = "r" }), { description = "
 hl.bind(MAIN_MOD .. " + K", hl.dsp.focus({ direction = "u" }), { description = "Focus up" })
 hl.bind(MAIN_MOD .. " + J", hl.dsp.focus({ direction = "d" }), { description = "Focus down" })
 
--- Move active windows
-hl.bind(MAIN_MOD .. " + SHIFT + H", hl.dsp.window.move({ direction = "l" }), { description = "Move window left" })
-hl.bind(MAIN_MOD .. " + SHIFT + L", hl.dsp.window.move({ direction = "r" }), { description = "Move window right" })
-hl.bind(MAIN_MOD .. " + SHIFT + K", hl.dsp.window.move({ direction = "u" }), { description = "Move window up" })
-hl.bind(MAIN_MOD .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }), { description = "Move window down" })
-
--- Move active window to a workspace
-for i = 1, WORKSPACES do
-    hl.bind(MAIN_MOD .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }), { description = "Move window to workspace " .. i })
-end
-
--- Switch workspaces
-for i = 1, WORKSPACES do
-    hl.bind(MAIN_MOD .. " + " .. i, hl.dsp.focus({ workspace = i }), { description = "Switch to workspace " .. i })
-end
+-- Window move (SUPER+SHIFT+HJKL) and local workspaces (SUPER+1/2/3) live in modules/workspaces.lua
 
 -- Standard special workspace (scratchpad). Can also be used to hide fullscreen games.
 hl.bind(MAIN_MOD .. " + S", hl.dsp.workspace.toggle_special("magic"), { description = "Toggle magic workspace" })
