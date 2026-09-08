@@ -54,7 +54,6 @@ Item {
                 theme.text    = pywal.special.foreground
                 theme.subText = pywal.special.foreground
                 theme.accent  = pywal.colors.color2
-                theme.urgent  = pywal.colors.color2
                 theme.success = pywal.colors.color2
                 theme.borderColor = parseHex(pywal.colors.color6, 0.20)
                 theme.background = parseHex(pywal.special.background, 0.60)

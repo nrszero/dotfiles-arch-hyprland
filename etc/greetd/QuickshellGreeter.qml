@@ -10,23 +10,65 @@ import "./modules"
 
 ShellRoot {
     id: root
-    
+
     property Theme appTheme: Theme { id: theme }
- 
-    // ---------------------------------------------------------
-    // UI LAYOUT
-    // ---------------------------------------------------------
+    property var sessionCommand: ["start-hyprland"]
+    property var userList: []
+    property string lastUser: ""
+
+    function persistLastUser(name) {
+        const user = (name || "").trim()
+        if (!user)
+            return
+        lastUserFile.setText(user)
+        lastUserFile.waitForJob()
+    }
+
+    FileView {
+        id: lastUserFile
+        path: "/var/tmp/greeter-last-user"
+        watchChanges: false
+        printErrors: false
+        onLoaded: {
+            root.lastUser = (text() || "").trim()
+        }
+        onLoadFailed: root.lastUser = ""
+    }
+
+    Process {
+        id: userFetch
+        running: true
+        command: ["bash", "-c", "getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 && $1 != \"nobody\" { print $1 }'"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const raw = this.text.trim()
+                const lines = raw ? raw.split("\n") : []
+                const list = []
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i])
+                        list.push(lines[i])
+                }
+                list.sort((a, b) => a.localeCompare(b))
+                root.userList = list
+            }
+        }
+    }
+
     Instantiator {
         model: Quickshell.screens
 
         delegate: PanelWindow {
             id: mainWin
             screen: modelData
-            
-            property bool isMain: modelData.x === 0
 
+            property bool isMain: modelData.x === 0
             property bool isInputReady: false
-            
+            property string selectedUser: ""
+            property bool userTouched: false
+            property string pendingPassword: ""
+            property string pendingUsername: ""
+
             anchors.top: true
             anchors.bottom: true
             anchors.left: true
@@ -35,49 +77,97 @@ ShellRoot {
             WlrLayershell.keyboardFocus: isMain ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             WlrLayershell.layer: WlrLayer.Overlay
             color: "black"
-            
-            property var sessionCommand: ["start-hyprland"] 
+
+            readonly property bool otherMode: selectedUser === ""
+            readonly property bool askingUsername: otherMode && loginState.state === "username"
+
+            function applyDefaultUser() {
+                if (userTouched)
+                    return
+                if (root.userList.indexOf(root.lastUser) !== -1)
+                    selectedUser = root.lastUser
+                else if (root.userList.length === 1)
+                    selectedUser = root.userList[0]
+                else
+                    selectedUser = ""
+            }
+
+            function selectUser(name) {
+                userTouched = true
+                if (Greetd.state !== GreetdState.Inactive && Greetd.state !== GreetdState.Launched)
+                    Greetd.cancelSession()
+                pendingPassword = ""
+                pendingUsername = ""
+                context.showFailure = false
+                loginState.state = "username"
+                selectedUser = name
+                authStage.text = ""
+                authStage.inputField.forceActiveFocus()
+            }
 
             function attemptLogin() {
-                var txt = inputField.text.trim();
-                if (txt === "") return;
+                const txt = authStage.text.trim()
+                if (txt === "" || context.maxTries)
+                    return
+
+                if (!otherMode) {
+                    if (loginState.state === "username") {
+                        pendingPassword = txt
+                        pendingUsername = selectedUser
+                        Greetd.createSession(selectedUser)
+                    } else {
+                        Greetd.respond(txt)
+                    }
+                    return
+                }
 
                 if (loginState.state === "username") {
-                    Greetd.createSession(txt);
+                    pendingUsername = txt
+                    Greetd.createSession(txt)
                 } else {
-                    Greetd.respond(txt);
+                    Greetd.respond(txt)
                 }
             }
-            
+
             function togglePopup(target) {
-                let popups = [
-                    lockPowerButtonPopup
-                ]
-                
+                let popups = [lockPowerButtonPopup]
                 for (let p of popups) {
-                    if (p !== target) p.visible = false
+                    if (p !== target)
+                        p.visible = false
                 }
                 target.visible = !target.visible
             }
 
-            // Greetd is a singleton, so we use Connections to listen to it
+            onIsMainChanged: applyDefaultUser()
+            Component.onCompleted: applyDefaultUser()
+            Connections {
+                target: root
+                function onUserListChanged() { mainWin.applyDefaultUser() }
+                function onLastUserChanged() { mainWin.applyDefaultUser() }
+            }
+
             Connections {
                 id: context
                 target: Greetd
-                
+                enabled: isMain
+
                 property bool showFailure: false
                 property bool maxTries: false
 
                 function onAuthMessage(message, isError, responseRequired, echo) {
                     console.log("[GREETD] Message:", message, "responseRequired:", responseRequired)
                     context.showFailure = false
-                    
+
                     if (responseRequired) {
-                        inputField.text = ""
-                        inputField.echoMode = echo ? TextInput.Normal : TextInput.Password
-                        inputField.inputMethodHints = echo ? Qt.ImhNone : Qt.ImhSensitiveData
-                        inputField.forceActiveFocus()
                         loginState.state = "password"
+                        if (mainWin.pendingPassword !== "") {
+                            const pw = mainWin.pendingPassword
+                            mainWin.pendingPassword = ""
+                            Greetd.respond(pw)
+                        } else {
+                            authStage.text = ""
+                            authStage.inputField.forceActiveFocus()
+                        }
                     } else if (message.includes("lock")) {
                         context.maxTries = true
                     }
@@ -85,53 +175,41 @@ ShellRoot {
 
                 function onAuthFailure(message) {
                     console.log("[GREETD] Failed with message:", message)
-                    if (!context.maxTries) {
+                    mainWin.pendingPassword = ""
+                    if (!context.maxTries)
                         context.showFailure = true
-                    }
-                   
+
                     loginState.state = "username"
-                    inputField.text = ""
-                    inputField.echoMode = TextInput.Normal
-                    inputField.inputMethodHints = Qt.ImhNone
-                    inputField.forceActiveFocus()
+                    authStage.text = ""
+                    authStage.inputField.forceActiveFocus()
                 }
 
                 function onReadyToLaunch() {
                     context.showFailure = false
-
-                    // Call the singleton directly
-                    Greetd.launch(sessionCommand)
+                    root.persistLastUser(Greetd.user || mainWin.pendingUsername || mainWin.selectedUser)
+                    Greetd.launch(root.sessionCommand)
                 }
 
                 function onError(error) {
-                    if (!context.maxTries) {
+                    mainWin.pendingPassword = ""
+                    if (!context.maxTries)
                         context.showFailure = true
-                    }
+                    loginState.state = "username"
+                    authStage.text = ""
                 }
             }
 
-            // State machine to track where we are
             Item {
                 id: loginState
-                state: "username" // Initial state
+                state: "username"
                 states: [
                     State { name: "username" },
                     State { name: "password" }
                 ]
             }
-            
-            component BarModule: Rectangle {
-                color: theme.background
-                radius: theme.radius
-                border.width: theme.borderWidth
-                border.color: theme.borderColor
-                height: 36
-                Layout.alignment: Qt.AlignVCenter
-            }
 
             BatteryProc { id: battery }
 
-            // Wallpaper
             Item {
                 anchors.fill: parent
                 clip: true
@@ -141,14 +219,11 @@ ShellRoot {
                     anchors.fill: parent
                     source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
                     fillMode: Image.PreserveAspectCrop
-
-                    // Disable async loading to prevent cross-thread Wayland surface crashes
                     asynchronous: true
                     cache: false
                     smooth: true
                 }
 
-                // Light dark overlay (keep this)
                 Rectangle {
                     anchors.fill: parent
                     color: "#000000"
@@ -156,351 +231,119 @@ ShellRoot {
                 }
             }
 
-            // Master
             Item {
                 id: content
                 anchors.fill: parent
                 anchors.margins: 10
                 visible: isMain
 
-                // Auto-focus intelligently targets the cover or the input
                 Timer {
                     interval: 500
                     running: isMain && content.visible
                     repeat: true
                     onTriggered: {
-                        if (content.visible) {
-                            if (!isInputReady && !coverItem.activeFocus) {
-                                coverItem.forceActiveFocus()
-                            } else if (isInputReady && !inputField.activeFocus) {
-                                inputField.forceActiveFocus()
-                            }
-                        }
+                        if (!content.visible)
+                            return
+                        if (!isInputReady && !authStage.coverItem.activeFocus)
+                            authStage.coverItem.forceActiveFocus()
+                        else if (isInputReady && !authStage.inputField.activeFocus)
+                            authStage.inputField.forceActiveFocus()
                     }
                 }
 
-                // LEFT SIDE
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignLeft
-                    spacing: theme.spacing
+                AuthPill {
+                    theme: root.appTheme
+                    implicitWidth: timeText.implicitWidth + 20
 
-                    // Time Pill
-                    BarModule {
-                        id: timePillBox
-                        implicitWidth: timeText.implicitWidth + 20
+                    Text {
+                        id: timeText
+                        anchors.centerIn: parent
+                        text: Qt.formatTime(new Date(), "h:mm AP")
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeMd
+                        font.bold: true
+                    }
 
-                        Text {
-                            id: timeText
-                            anchors.centerIn: parent
-                            text: Qt.formatTime(new Date(), "h:mm AP")
-                            color: theme.text
-                            font.family: theme.fontFace
-                            font.pixelSize: theme.fontSizeMd
-                            font.bold: true
-                        }
-                        
-                        // Update the clock every second so minutes change on time
-                        Timer {
-                            interval: 1000
-                            running: true
-                            repeat: true
-                            onTriggered: timeText.text = Qt.formatTime(new Date(), "h:mm AP")
-                        }
+                    Timer {
+                        interval: 1000
+                        running: true
+                        repeat: true
+                        onTriggered: timeText.text = Qt.formatTime(new Date(), "h:mm AP")
                     }
                 }
-                
-                // CENTER
-                BarModule {
-                    id: infoBar
+
+                AuthPill {
                     anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
+                    theme: root.appTheme
                     implicitWidth: infoText.implicitWidth + 20
 
                     Text {
                         id: infoText
                         anchors.centerIn: parent
-                        text: "󰌾 Locked"
+                        text: "󰍂 Sign in"
                         color: theme.text
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeMd
                         font.bold: true
                     }
                 }
-                
-                // RIGHT SIDE
-                RowLayout {
+
+                LockStatusPill {
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    spacing: theme.spacing
-                    
-                    BarModule {
-                        implicitWidth: statusRow.implicitWidth + 16
-                        
-                        RowLayout {
-                            id: statusRow
-                            anchors.centerIn: parent
-                            spacing: theme.spacing
-                            
-                            // Battery
-                            RowLayout {
-                                visible: battery.battPresent
-                                spacing: 1 // Tight spacing between the battery body and the tip
-                                
-                                // Main Battery Body
-                                Rectangle {
-                                    id: batteryProgress
-                                    Layout.preferredWidth: 30
-                                    Layout.preferredHeight: 16
-                                    Layout.alignment: Qt.AlignVCenter
-                                    radius: 4.5
-                                    
-                                    // Track Color (The empty part of the battery)
-                                    color: theme.surface
-
-                                    // The Solid Fill Level
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.top: parent.top
-                                        anchors.bottom: parent.bottom
-                                        width: parent.width * battery.battLevel
-                                        radius: 4.5
-                                        color: theme.text;
-                                    }
-                                    
-                                    // The Inner Text & Icon
-                                    RowLayout {
-                                        anchors.centerIn: parent
-                                        spacing: 0
-
-                                        // Low Battery
-                                        Text {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            Layout.rightMargin: 1
-                                            text: "!"
-                                            font.family: theme.fontFace
-                                            font.pixelSize: 12
-                                            visible: {
-                                                if (battery.battLevel <= 0.2 && !battery.battCharging) {
-                                                    return true
-                                                }
-                                                return false
-                                            } 
-
-                                            // Cuts out of the solid fill
-                                            color: theme.accent 
-                                        }
-
-                                        // Charging Bolt Icon
-                                        Text {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            Layout.rightMargin: 1
-                                            text: "󱐋"
-                                            font.family: theme.fontFace
-                                            font.pixelSize: 12
-                                            visible: battery.battCharging
-                                            // Cuts out of the solid fill
-                                            color: theme.accent 
-                                        }
-                                        
-                                        // Percentage Text
-                                        Text {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            font.family: theme.fontFace
-                                            font.pixelSize: 12
-                                            font.bold: true
-                                            text: Math.round(battery.battLevel * 100)
-                                            color: theme.accent
-                                        }
-                                    }
-                                }
-
-                                // Battery Tip (The positive terminal nub)
-                                Rectangle {
-                                    Layout.preferredWidth: 2
-                                    Layout.preferredHeight: 6
-                                    Layout.alignment: Qt.AlignVCenter
-                                    radius: 1
-                                    
-                                    // If full, color it with the fill. Otherwise, use the track color.
-                                    color: {
-                                        if (battery.battLevel >= 0.98) {
-                                            return theme.text;
-                                        }
-
-                                        return theme.surface;
-                                    }
-                                }
-                            }
-                            
-                            // Network
-                            Text {
-                                id: networkIcon
-                                text: networkWidget.isWifiActiveRoute ? "󰤥" : "󰈀"
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeXl
-                                color: networkWidget.connectionState === 1 ? theme.accent :
-                                       networkWidget.connectionState === 2 ? theme.urgent :
-                                       networkWidget.currentWifiSsid !== "" ? theme.accent : theme.text 
-                            }
-
-                            // Power
-                            Text {
-                                id: powerIcon
-                                text: "󰐥"
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeXl
-                                color: theme.text
-                                HoverHandler { id: powerIconHover }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: mainWin.togglePopup(lockPowerButtonPopup)
-                                }
-                            }
-                        }
-                    }
+                    theme: root.appTheme
+                    battery: battery
+                    networkWidget: networkWidget
+                    onPowerClicked: mainWin.togglePopup(lockPowerButtonPopup)
                 }
 
-                // THE SCREEN COVER
-                Item {
-                    id: coverItem
+                AuthStage {
+                    id: authStage
                     anchors.fill: parent
-                    visible: isMain && !isInputReady
-                    
-                    // Allow this item to capture the broken Wayland keystroke
-                    focus: visible
+                    theme: root.appTheme
+                    inputReady: mainWin.isInputReady
+                    coverText: "Press any key to sign in"
+                    buttonText: mainWin.askingUsername ? "Next" : "Login"
+                    placeholderText: {
+                        if (context.showFailure)
+                            return "Incorrect Password"
+                        if (context.maxTries)
+                            return "Locked Account (10 min)"
+                        if (mainWin.askingUsername)
+                            return "Enter Username"
+                        return "Enter Password"
+                    }
+                    placeholderUrgent: context.showFailure || context.maxTries
+                    echoMode: mainWin.askingUsername ? TextInput.Normal : TextInput.Password
+                    inputMethodHints: mainWin.askingUsername ? Qt.ImhNone : Qt.ImhSensitiveData
+                    onCoverDismissed: {
+                        console.log("[Greeter] Cover dismissed via keyboard.")
+                        mainWin.isInputReady = true
+                    }
+                    onSubmitted: mainWin.attemptLogin()
+                    onBackRequested: {
+                        if (Greetd.state !== GreetdState.Inactive && Greetd.state !== GreetdState.Launched)
+                            Greetd.cancelSession()
+                        mainWin.pendingPassword = ""
+                        context.showFailure = false
+                        loginState.state = "username"
+                        authStage.text = ""
+                        mainWin.isInputReady = false
+                    }
 
-                    Rectangle {
-                        width: 350
-                        height: 70
-                        anchors.centerIn: parent
-                        
-                        // Hooking into your Pywal theme for a seamless look
-                        color: theme.surface
-                        border.width: theme.borderWidth
-                        border.color: theme.borderColor
-                        radius: theme.radius
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Press any key to unlock"
-                            font.pixelSize: 18
-                            font.bold: true
-                            color: theme.text
+                    header: [
+                        AuthUserRow {
+                            theme: root.appTheme
+                            users: root.userList
+                            selectedUser: mainWin.selectedUser
+                            onUserSelected: (user) => mainWin.selectUser(user)
                         }
-                    }
-
-                    Keys.onPressed: (event) => {
-                        console.log("[LockScreen] Cover dismissed via keyboard.")
-                        isInputReady = true
-                        event.accepted = true // Prevent the corrupted modifier state from passing through
-                    }
+                    ]
                 }
-
-                // CENTERED LOCK CARD
-                Rectangle {
-                    anchors.fill: parent
-                    color: "transparent"
-                    
-                    // Hide the actual password card until the cover is gone
-                    opacity: (isMain && isInputReady) ? 1.0 : 0.0
-                    visible: isMain && isInputReady
-                    enabled: isInputReady
-
-                    Rectangle {   
-                        width: 350
-                        height: 70
-                        anchors.centerIn: parent
-
-                        color: theme.surface
-                        border.width: theme.borderWidth
-                        border.color: theme.borderColor
-                        radius: theme.radius
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 10
-
-                            // Input Field
-                            TextField {
-                                id: inputField
-                                
-                                // Looks
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 45
-                                horizontalAlignment: TextInput.AlignHCenter
-                                verticalAlignment: TextField.AlignVCenter
-                                color: theme.text
-                                font.family: theme.fontFace
-                                font.pixelSize: theme.fontSizeMd
-                                passwordCharacter: "\u25CF"
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: inputField.text.length === 0
-                                    text: {
-                                        if (context.showFailure) return "Incorrect Password"
-                                        if (context.maxTries) return "Locked Account (10 min)"
-                                        if (loginState.state === "username") return "Enter Username"
-                                        return "Enter Password"
-                                    }
-                                    color: (context.showFailure || context.maxTries) ? theme.urgent : theme.text
-                                    font.pixelSize: theme.fontSizeMd
-                                }
-                                background: Rectangle {
-                                    color: Qt.darker(theme.surface, 1.2)
-                                    border.width: theme.borderWidth
-                                    border.color: inputField.activeFocus ? theme.accent : "transparent"
-                                    radius: theme.radius
-                                } 
-                                echoMode: TextInput.Normal 
-
-                                // Function
-                                selectByMouse: true
-                                focus: true
-                                Keys.onReturnPressed: attemptLogin()
-                                Component.onCompleted: cursorPosition = text.length
-                    
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.IBeamCursor
-                                    onPressed: (mouse) => {
-                                        inputField.forceActiveFocus()
-                                        mouse.accepted = false 
-                                    }
-                                }
-                            }
-                            
-                            Button {
-                                text: loginState.state === "username" ? "Next" : "Login"
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 80
-                                Layout.preferredHeight: 45
-                                    
-                                background: Rectangle {
-                                    color: parent.hovered || parent.down ? theme.accent : theme.surface
-                                    radius: theme.radius
-                                    border.width: theme.borderWidth
-                                    border.color: theme.borderColor
-                                }
-
-                                contentItem: Text {
-                                    text: parent.text
-                                    color: theme.text
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.bold: true
-                                    font.pixelSize: 16
-                                }    
-                                onClicked: attemptLogin()
-                            }
-                        }
-                    }
-                }    
             }
 
-            // === POPUPS ===    
             Popup {
                 id: lockPowerButtonPopup
                 x: mainWin.width - width - 10
@@ -508,19 +351,15 @@ ShellRoot {
                 width: 400
                 height: 260
                 padding: 0
-                
-                // Bypasses Qt's default background styling completely
-                background: Item {} 
+                background: Item {}
 
-                // Forces Qt to use your UI as the actual content container
                 contentItem: PowerButtonContent {
                     anchors.fill: parent
                     theme: root.appTheme
                     targetWindow: lockPowerButtonPopup
                 }
             }
-            
-            // === PROCESS'S ===
+
             NetworkWidget {
                 id: networkWidget
             }
