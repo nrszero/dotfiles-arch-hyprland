@@ -23,6 +23,7 @@ PanelWindow {
     required property var notifModel
     required property var dismissNotification
     required property var networkWidget
+    required property var battery
 
     signal closeRequested()
 
@@ -40,16 +41,51 @@ PanelWindow {
     readonly property bool isMathQuery: parsedQuery.filter === "calc" || isMathText(parsedQuery.needle)
     readonly property string mathExpression: parsedQuery.filter === "calc" ? parsedQuery.needle : parsedQuery.needle
     readonly property bool showingCalc: isMathQuery || (keepCalcHistory && query.trim() === "")
-    readonly property var chipOrder: ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs", "display", "wallpaper"]
-    readonly property var systemChips: ["networks", "bluetooth", "audio", "notifs", "power", "display", "wallpaper"]
-    readonly property var jumpTabs: [
-        { label: "Networks", value: "networks", icon: "󰖩" },
-        { label: "Bluetooth", value: "bluetooth", icon: "󰂯" },
-        { label: "Audio", value: "audio", icon: "󰕾" },
-        { label: "Notifs", value: "notifs", icon: "󰂚" },
-        { label: "Display", value: "display", icon: "󰍹" },
-        { label: "Wallpaper", value: "wallpaper", icon: "󰸉" }
-    ]
+    readonly property bool hasBattery: !!(battery && battery.battPresent)
+    readonly property var chipOrder: {
+        const chips = ["all", "apps", "cli", "binds", "power", "networks", "bluetooth", "audio", "notifs", "display", "wallpaper"]
+        if (hasBattery)
+            chips.splice(chips.indexOf("audio") + 1, 0, "battery")
+        return chips
+    }
+    readonly property var systemChips: {
+        const chips = ["networks", "bluetooth", "audio", "notifs", "power", "display", "wallpaper"]
+        if (hasBattery)
+            chips.splice(chips.indexOf("audio") + 1, 0, "battery")
+        return chips
+    }
+    readonly property var jumpTabs: {
+        const tabs = [
+            { label: "Networks", value: "networks", icon: "󰖩" },
+            { label: "Bluetooth", value: "bluetooth", icon: "󰂯" },
+            { label: "Audio", value: "audio", icon: "󰕾" },
+            { label: "Notifs", value: "notifs", icon: "󰂚" },
+            { label: "Display", value: "display", icon: "󰍹" },
+            { label: "Wallpaper", value: "wallpaper", icon: "󰸉" },
+        ]
+        if (hasBattery)
+            tabs.splice(3, 0, { label: "Battery", value: "battery", icon: String.fromCodePoint(0xF0079) })
+        return tabs
+    }
+    readonly property var chipItems: {
+        const items = [
+            { label: "All", value: "all", searchable: true },
+            { label: "Apps", value: "apps", searchable: true },
+            { label: "CLI", value: "cli", searchable: true },
+            { label: "Binds", value: "binds", searchable: true },
+            { label: "Power", value: "power", searchable: true },
+            { divider: true },
+            { label: "Networks", value: "networks", searchable: false },
+            { label: "Bluetooth", value: "bluetooth", searchable: false },
+            { label: "Audio", value: "audio", searchable: false },
+            { label: "Notifs", value: "notifs", searchable: false },
+            { label: "Display", value: "display", searchable: false },
+            { label: "Wallpaper", value: "wallpaper", searchable: false }
+        ]
+        if (hasBattery)
+            items.splice(9, 0, { label: "Battery", value: "battery", searchable: false })
+        return items
+    }
     readonly property bool showingSystemTab: !showingCalc && systemChips.indexOf(parsedQuery.filter) >= 0
     readonly property bool showAllHints: parsedQuery.filter === "all" && !showingCalc
     readonly property var activeTab: {
@@ -57,6 +93,7 @@ PanelWindow {
         case "networks": return networkTab
         case "bluetooth": return bluetoothTab
         case "audio": return audioTab
+        case "battery": return batteryTab
         case "notifs": return notifTab
         case "power": return powerTab
         case "display": return displayTab
@@ -772,20 +809,7 @@ PanelWindow {
 
                         Repeater {
                             id: chipRepeater
-                            model: [
-                                { label: "All", value: "all", searchable: true },
-                                { label: "Apps", value: "apps", searchable: true },
-                                { label: "CLI", value: "cli", searchable: true },
-                                { label: "Binds", value: "binds", searchable: true },
-                                { label: "Power", value: "power", searchable: true },
-                                { divider: true },
-                                { label: "Networks", value: "networks", searchable: false },
-                                { label: "Bluetooth", value: "bluetooth", searchable: false },
-                                { label: "Audio", value: "audio", searchable: false },
-                                { label: "Notifs", value: "notifs", searchable: false },
-                                { label: "Display", value: "display", searchable: false },
-                                { label: "Wallpaper", value: "wallpaper", searchable: false }
-                            ]
+                            model: root.chipItems
 
                             delegate: Item {
                                 required property var modelData
@@ -874,6 +898,7 @@ PanelWindow {
                     case "power": return 5
                     case "display": return 6
                     case "wallpaper": return 7
+                    case "battery": return 8
                     default: return 0
                     }
                 }
@@ -1104,6 +1129,14 @@ PanelWindow {
                     query: root.parsedQuery.needle
                     tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "wallpaper"
                 }
+
+                LumenBatteryTab {
+                    id: batteryTab
+                    theme: root.theme
+                    battery: root.battery
+                    query: root.parsedQuery.needle
+                    tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "battery"
+                }
             }
 
             Text {
@@ -1117,6 +1150,8 @@ PanelWindow {
                         return "↑↓ move    ↵ connect    del forget    tab filter    esc close"
                     if (root.parsedQuery.filter === "audio")
                         return "↑↓ move    ←→ volume    ↵ mute/select    tab filter    esc close"
+                    if (root.parsedQuery.filter === "battery")
+                        return "↑↓ move    tab filter    esc close"
                     if (root.parsedQuery.filter === "notifs")
                         return "↑↓ move    ↵ dismiss    del dismiss    tab filter    esc close"
                     if (root.parsedQuery.filter === "power")

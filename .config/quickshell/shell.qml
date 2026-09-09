@@ -115,6 +115,7 @@ Scope {
     PathIndex { id: pathIndex }
     BindIndex { id: bindIndex }
     NetworkWidget { id: sharedNetwork }
+    BatteryProc { id: sharedBattery }
 
     function setLumenChip(value) {
         lumenChip = value
@@ -241,6 +242,7 @@ Scope {
                             notifModel: sharedNotifList
                             dismissNotification: shellRoot.dismissNotification
                             networkWidget: sharedNetwork
+                            battery: sharedBattery
                             onCloseRequested: shellRoot.setLumen(false)
                         }
 
@@ -251,6 +253,7 @@ Scope {
                             notifModel: sharedNotifList
                             dismissNotification: shellRoot.dismissNotification
                             networkWidget: sharedNetwork
+                            battery: sharedBattery
                             barVisible: shellRoot.barsVisible
                             
                             onInteractionStarted: shellRoot.registerInteraction()

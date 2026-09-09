@@ -20,6 +20,7 @@ PanelWindow {
     required property var notifModel
     required property var dismissNotification   // function(index) from shell
     required property var networkWidget
+    required property var battery
     required property bool barVisible
     
     readonly property int wsPerMonitor: 3
@@ -72,7 +73,8 @@ PanelWindow {
                                  powerButtonPopup.visible ||
                                  calendarPopup.visible ||
                                  notifCenter.visible ||
-                                 nowPlayingPopup.visible
+                                 nowPlayingPopup.visible ||
+                                 batteryPopup.visible
 
     signal interactionStarted()
     signal interactionEnded()
@@ -128,7 +130,7 @@ PanelWindow {
         let popups = [
             networkPopup, bluetoothPopup, volumePopup, 
             powerButtonPopup, calendarPopup, notifCenter,
-            nowPlayingPopup
+            nowPlayingPopup, batteryPopup
         ]
         
         for (let p of popups) {
@@ -182,8 +184,6 @@ PanelWindow {
         height: 36
         Layout.alignment: Qt.AlignVCenter
     }
-
-    BatteryProc { id: battery }
 
     Item {
         id: mainLayout
@@ -368,94 +368,20 @@ PanelWindow {
                     anchors.centerIn: parent
                     spacing: theme.spacing
                     
-                    // Battery
-                    RowLayout {
+                    Text {
+                        id: batteryIcon
                         visible: battery.battPresent
-                        spacing: 1 // Tight spacing between the battery body and the tip
-                        
-                        // Main Battery Body
-                        Rectangle {
-                            id: batteryProgress
-                            Layout.preferredWidth: 30
-                            Layout.preferredHeight: 16
-                            Layout.alignment: Qt.AlignVCenter
-                            radius: 4.5
-                            
-                            // Track Color (The empty part of the battery)
-                            color: theme.surface
+                        text: battery.icon
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeXl
+                        color: battery.iconColor(theme)
 
-                            // The Solid Fill Level
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: parent.width * battery.battLevel
-                                radius: 4.5
-                                color: theme.text;
-                            }
-                            
-                            // The Inner Text & Icon
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: 0
+                        HoverHandler { id: batteryIconHover }
 
-                                // Low Battery
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Layout.rightMargin: 1
-                                    text: "!"
-                                    font.family: theme.fontFace
-                                    font.pixelSize: 12
-                                    visible: {
-                                        if (battery.battLevel <= 0.2 && !battery.battCharging) {
-                                            return true
-                                        }
-                                        return false
-                                    } 
-
-                                    // Cuts out of the solid fill
-                                    color: theme.accent 
-                                }
-
-                                // Charging Bolt Icon
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Layout.rightMargin: 1
-                                    text: "󱐋"
-                                    font.family: theme.fontFace
-                                    font.pixelSize: 12
-                                    visible: battery.battCharging
-                                    // Cuts out of the solid fill
-                                    color: theme.accent 
-                                }
-                                
-                                // Percentage Text
-                                Text {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    font.family: theme.fontFace
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    text: Math.round(battery.battLevel * 100)
-                                    color: theme.accent
-                                }
-                            }
-                        }
-
-                        // Battery Tip (The positive terminal nub)
-                        Rectangle {
-                            Layout.preferredWidth: 2
-                            Layout.preferredHeight: 6
-                            Layout.alignment: Qt.AlignVCenter
-                            radius: 1
-                            
-                            // If full, color it with the fill. Otherwise, use the track color.
-                            color: {
-                                if (battery.battLevel >= 0.98) {
-                                    return theme.text;
-                                }
-
-                                return theme.surface;
-                            }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.togglePopup(batteryPopup)
                         }
                     }
 
@@ -592,6 +518,12 @@ PanelWindow {
                 npPill.currentIndex = (npPill.currentIndex + step + len) % len;
             }
         }
+    }
+    BatteryPopup {
+        id: batteryPopup
+        anchor.item: rightBarMod
+        theme: root.theme
+        battery: root.battery
     }
     VolumePopup {
         id: volumePopup
