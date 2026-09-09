@@ -148,7 +148,7 @@ Item {
         const maker = f.MANUFACTURER || ""
         const model = f.MODEL || ""
         root.battModel = [maker, model].filter(s => s).join(" ")
-        root.battCycles = isFinite(cycles) ? Math.round(cycles) : -1
+        root.battCycles = (isFinite(cycles) && cycles > 0) ? Math.round(cycles) : -1
         root.battLevel = isFinite(cap) ? Math.max(0, Math.min(1, cap / 100)) : 0
 
         const nowWh = isFinite(energyNow) ? energyNow / 1e6
