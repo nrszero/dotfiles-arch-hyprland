@@ -78,10 +78,26 @@ Item {
         return battCharging ? span + " until full" : span + " remaining"
     }
 
+    property int liveWatchers: 0
+    readonly property bool live: liveWatchers > 0
+
+    function watch() {
+        liveWatchers++
+    }
+
+    function unwatch() {
+        liveWatchers = Math.max(0, liveWatchers - 1)
+    }
+
     function refresh() {
         if (battProc.running)
             battProc.running = false
         battProc.running = true
+    }
+
+    onLiveChanged: {
+        refresh()
+        pollTimer.restart()
     }
 
     function parseNum(v) {
@@ -224,7 +240,8 @@ Item {
     }
 
     Timer {
-        interval: 15000
+        id: pollTimer
+        interval: root.live ? 1000 : 15000
         running: true
         repeat: true
         onTriggered: root.refresh()

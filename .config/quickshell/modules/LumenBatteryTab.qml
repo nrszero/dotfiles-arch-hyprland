@@ -17,8 +17,19 @@ Item {
     onQueryChanged: resetSelection()
 
     onTabActiveChanged: {
-        if (tabActive && battery && battery.refresh)
-            battery.refresh()
+        if (!battery)
+            return
+        if (tabActive) {
+            if (battery.watch)
+                battery.watch()
+        } else if (battery.unwatch) {
+            battery.unwatch()
+        }
+    }
+
+    Component.onDestruction: {
+        if (tabActive && battery && battery.unwatch)
+            battery.unwatch()
     }
 
     function cancelPending() {

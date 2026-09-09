@@ -56,11 +56,18 @@ PopupWindow {
 
     onVisibleChanged: {
         if (visible) {
-            if (battery && battery.refresh)
-                battery.refresh()
+            if (battery && battery.watch)
+                battery.watch()
             hideTimer.stop()
             Qt.callLater(updateHover)
+        } else if (battery && battery.unwatch) {
+            battery.unwatch()
         }
+    }
+
+    Component.onDestruction: {
+        if (visible && battery && battery.unwatch)
+            battery.unwatch()
     }
 
     Rectangle {
