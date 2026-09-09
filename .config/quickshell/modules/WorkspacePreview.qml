@@ -19,7 +19,7 @@ PanelWindow {
 
     readonly property int cardWidth: 220
     readonly property int cardGap: theme.spacing
-    readonly property int wsPerMonitor: 3
+    readonly property int wsPerMonitor: 5
 
     screen: screenModel
     visible: previewVisible && isOnFocusedMonitor

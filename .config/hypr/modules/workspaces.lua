@@ -1,7 +1,7 @@
--- Local 1–3 workspaces per monitor (layout order: x, then y).
+-- Local 1–5 workspaces per monitor (layout order: x, then y).
 -- SUPER+1 is always this screen's first workspace.
 
-local per = WS_PER_MONITOR or 3
+local per = WS_PER_MONITOR or 5
 local adopt_tries = 0
 
 local function live_monitors()
@@ -19,7 +19,7 @@ local function live_monitors()
 end
 
 -- IDs come from monitors.lua order, not live x/y. At login Hyprland can
--- report a distinct but wrong layout (or 0x0), which used to pin 1–3 to DP-1.
+-- report a distinct but wrong layout (or 0x0), which used to pin 1–5 to DP-1.
 local function layout_names()
     local names = {}
     local seen = {}

@@ -23,7 +23,7 @@ PanelWindow {
     required property var battery
     required property bool barVisible
     
-    readonly property int wsPerMonitor: 3
+    readonly property int wsPerMonitor: 5
     function localIndexOf(id) {
         const n = root.wsPerMonitor
         let idx = Number(id) % n

@@ -4,7 +4,7 @@ MAIN_MOD = "SUPER"
 TERMINAL = "kitty"
 BROWSER = "google-chrome-stable --ozone-platform=wayland --ozone-platform-hint=auto"
 FILE_MANAGER = "kitty yazi"
-WS_PER_MONITOR = 3
+WS_PER_MONITOR = 5
 
 local function parse_xy(pos)
     if type(pos) ~= "string" then
