@@ -18,13 +18,15 @@ PopupWindow {
     implicitHeight: 450
     visible: false
     color: "transparent"
-    grabFocus: selectedSsid !== "" && requiresPassword
+    readonly property bool passwordOpen: selectedSsid !== "" && requiresPassword
+    grabFocus: true
 
     HoverHandler { id: popupHover }
     
     // Track the currently selected network for the password prompt
     property string selectedSsid: ""
     property bool requiresPassword: false
+    property bool watching: false
 
     Timer {
         id: hideTimer
@@ -46,6 +48,20 @@ PopupWindow {
             hideTimer.restart()
         }
     }
+
+    function focusPassword() {
+        Qt.callLater(() => {
+            if (!root.visible || !root.passwordOpen)
+                return
+            passwordInput.forceActiveFocus()
+            root.updateHover()
+        })
+    }
+
+    onPasswordOpenChanged: {
+        if (passwordOpen)
+            focusPassword()
+    }
     
     function getWifiIcon(signal) {
         if (signal > 80) return "󰤨"; // Excellent
@@ -64,6 +80,8 @@ PopupWindow {
     }
 
     function wifiDetails(ssid, signal, security, inUse) {
+        if (networkWidget.isPendingTarget(ssid))
+            return networkWidget.operationLabel() + "…"
         const parts = []
         if (inUse && ssid === networkWidget.currentWifiSsid)
             parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
@@ -83,6 +101,8 @@ PopupWindow {
     }
 
     function activeWifiDetails() {
+        if (networkWidget.isPendingTarget(networkWidget.currentWifiSsid))
+            return networkWidget.operationLabel() + "…"
         const parts = []
         parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
         if (networkWidget.isSavedWifi(networkWidget.currentWifiSsid))
@@ -99,13 +119,28 @@ PopupWindow {
 
     onVisibleChanged: {
         if (visible) {
+            if (!watching) {
+                watching = true
+                networkWidget.watch()
+            }
             hideTimer.stop()
-            networkWidget.forceScan()
             Qt.callLater(updateHover)
         } else {
+            if (watching) {
+                watching = false
+                networkWidget.unwatch()
+            }
             // Reset state when closed
             selectedSsid = ""
+            requiresPassword = false
             passwordInput.text = ""
+        }
+    }
+
+    Component.onDestruction: {
+        if (watching) {
+            watching = false
+            networkWidget.unwatch()
         }
     }
 
@@ -145,7 +180,52 @@ PopupWindow {
                     Layout.fillWidth: true
                 }
             }
-                        
+
+            Rectangle {
+                visible: networkWidget.lastError !== ""
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? networkErrorRow.implicitHeight + 16 : 0
+                color: Qt.rgba(theme.urgent.r, theme.urgent.g, theme.urgent.b, 0.18)
+                radius: theme.radius
+                border.width: theme.borderWidth
+                border.color: theme.urgent
+
+                RowLayout {
+                    id: networkErrorRow
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 8
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: networkWidget.lastError
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                        wrapMode: Text.Wrap
+                    }
+
+                    Button {
+                        HoverHandler {
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                        background: Rectangle {
+                            color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                            radius: theme.radius
+                            border.width: theme.borderWidth
+                            border.color: parent.hovered ? theme.accent : "transparent"
+                        }
+                        contentItem: Text {
+                            text: "Dismiss"
+                            color: theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                        }
+                        onClicked: networkWidget.clearError()
+                    }
+                }
+            }
+
             // Current Ethernet connection state
             Rectangle {
                 Layout.fillWidth: true
@@ -248,6 +328,7 @@ PopupWindow {
                         MouseArea {
                             id: forgetMouse
                             anchors.fill: parent
+                            enabled: !networkWidget.isBusy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: networkWidget.forgetWifi()
@@ -262,6 +343,7 @@ PopupWindow {
                         MouseArea {
                             id: disconnectMouse
                             anchors.fill: parent
+                            enabled: !networkWidget.isBusy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: networkWidget.disconnectWifi()
@@ -378,6 +460,7 @@ PopupWindow {
                     MouseArea {
                         id: rowMouse
                         anchors.fill: parent
+                        enabled: !networkWidget.isBusy
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
@@ -391,7 +474,7 @@ PopupWindow {
                                 networkWidget.connectToWifi(model.ssid, "");
                                 root.selectedSsid = ""; 
                             } else {
-                                passwordInput.forceActiveFocus();
+                                root.focusPassword()
                             }
                         }
                     }
@@ -405,6 +488,7 @@ PopupWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 16
                         height: 24
+                        enabled: !networkWidget.isBusy
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: networkWidget.forgetWifi(model.ssid)
@@ -420,10 +504,12 @@ PopupWindow {
                 TextField {
                     id: passwordInput
                     Layout.fillWidth: true
+                    enabled: !networkWidget.isBusy
                     placeholderText: "Password for " + root.selectedSsid
                     echoMode: TextInput.Password
                     font.family: theme.fontFace
                     color: theme.text
+                    onActiveFocusChanged: root.updateHover()
                     background: Rectangle {
                         color: "transparent"
                         border.color: theme.borderColor
@@ -438,6 +524,7 @@ PopupWindow {
                 }
 
                 Button {
+                    enabled: !networkWidget.isBusy
                     HoverHandler {
                         cursorShape: Qt.PointingHandCursor
                     }
@@ -449,7 +536,7 @@ PopupWindow {
                             border.color: parent.hovered ? theme.accent : "transparent"
                     }
 
-                    text: "Connect"
+                    text: networkWidget.pendingOp === "connect" ? "Connecting…" : "Connect"
                     onClicked: {
                         networkWidget.connectToWifi(root.selectedSsid, passwordInput.text);
                         passwordInput.text = "";

@@ -116,6 +116,7 @@ Scope {
     BindIndex { id: bindIndex }
     NetworkWidget { id: sharedNetwork }
     BatteryProc { id: sharedBattery }
+    BluetoothActions { id: sharedBluetooth }
 
     function setLumenChip(value) {
         lumenChip = value
@@ -243,6 +244,7 @@ Scope {
                             dismissNotification: shellRoot.dismissNotification
                             networkWidget: sharedNetwork
                             battery: sharedBattery
+                            bluetoothActions: sharedBluetooth
                             onCloseRequested: shellRoot.setLumen(false)
                         }
 
@@ -254,6 +256,7 @@ Scope {
                             dismissNotification: shellRoot.dismissNotification
                             networkWidget: sharedNetwork
                             battery: sharedBattery
+                            bluetoothActions: sharedBluetooth
                             barVisible: shellRoot.barsVisible
                             
                             onInteractionStarted: shellRoot.registerInteraction()

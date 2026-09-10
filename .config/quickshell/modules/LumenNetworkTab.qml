@@ -13,12 +13,17 @@ Item {
     property int selectedIndex: 0
     property string selectedSsid: ""
     property bool requiresPassword: false
+    property bool watching: false
     signal requestSearchFocus()
     signal unhandledKey(var event)
 
     readonly property bool passwordOpen: selectedSsid !== "" && requiresPassword
     readonly property int itemCount: listModel.values ? listModel.values.length : 0
     readonly property string statusText: {
+        if (networkWidget && networkWidget.lastError !== "")
+            return networkWidget.lastError
+        if (networkWidget && networkWidget.isBusy)
+            return networkWidget.operationLabel() + "…"
         if (networkWidget && networkWidget.isScanning)
             return "scanning"
         const n = itemCount
@@ -26,10 +31,25 @@ Item {
     }
 
     onTabActiveChanged: {
-        if (tabActive && networkWidget && networkWidget.forceScan)
-            networkWidget.forceScan()
-        else
+        if (tabActive && networkWidget) {
+            if (!watching) {
+                watching = true
+                networkWidget.watch()
+            }
+        } else {
+            if (watching) {
+                watching = false
+                networkWidget.unwatch()
+            }
             cancelPending()
+        }
+    }
+
+    Component.onDestruction: {
+        if (watching && networkWidget) {
+            watching = false
+            networkWidget.unwatch()
+        }
     }
 
     onQueryChanged: resetSelection()
@@ -73,6 +93,12 @@ Item {
         const item = currentItem()
         if (!item)
             return
+        if (item.kind === "error") {
+            networkWidget.clearError()
+            return
+        }
+        if (networkWidget.isBusy)
+            return
         if (item.kind === "ethernet")
             return
         if (item.kind === "current") {
@@ -95,7 +121,7 @@ Item {
 
     function forgetSelected() {
         const item = currentItem()
-        if (!item || !item.canForget)
+        if (!item || !item.canForget || networkWidget.isBusy)
             return
         networkWidget.forgetWifi(item.ssid)
     }
@@ -152,6 +178,8 @@ Item {
     }
 
     function activeWifiDetails() {
+        if (networkWidget.isPendingTarget(networkWidget.currentWifiSsid))
+            return networkWidget.operationLabel() + "…"
         const parts = []
         parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
         if (networkWidget.isSavedWifi(networkWidget.currentWifiSsid))
@@ -162,6 +190,8 @@ Item {
     }
 
     function wifiDetails(ssid, signal, security, inUse) {
+        if (networkWidget.isPendingTarget(ssid))
+            return networkWidget.operationLabel() + "…"
         const parts = []
         if (inUse && ssid === networkWidget.currentWifiSsid)
             parts.push(networkWidget.isWifiActiveRoute ? "Connected" : "Inactive")
@@ -176,6 +206,22 @@ Item {
         const rows = []
         if (!networkWidget)
             return rows
+
+        if (networkWidget.lastError !== "") {
+            rows.push({
+                key: "error",
+                kind: "error",
+                title: "Network error",
+                subtitle: networkWidget.lastError,
+                icon: "",
+                ssid: "",
+                security: "",
+                inUse: false,
+                canForget: false,
+                accent: false,
+                urgent: true
+            })
+        }
 
         if (matches("ethernet") || matches("wired")) {
             rows.push({
@@ -250,6 +296,8 @@ Item {
             const _route = networkWidget ? networkWidget.isWifiActiveRoute : false
             const _rev = networkWidget ? networkWidget.savedWifiRevision : 0
             const _count = networkWidget && networkWidget.wifiModel ? networkWidget.wifiModel.count : 0
+            const _pending = networkWidget ? networkWidget.pendingOp + networkWidget.pendingTarget : ""
+            const _error = networkWidget ? networkWidget.lastError : ""
             return root.buildRows()
         }
     }
@@ -336,6 +384,7 @@ Item {
                         MouseArea {
                             id: forgetMouse
                             anchors.fill: parent
+                            enabled: !networkWidget.isBusy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: networkWidget.forgetWifi(modelData.ssid)
@@ -352,6 +401,7 @@ Item {
                         MouseArea {
                             id: disconnectMouse
                             anchors.fill: parent
+                            enabled: !networkWidget.isBusy
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: networkWidget.disconnectWifi()
@@ -362,6 +412,7 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     z: -1
+                    enabled: modelData.kind === "error" || !networkWidget.isBusy
                     cursorShape: modelData.kind === "ethernet" ? Qt.ArrowCursor : Qt.PointingHandCursor
                     onClicked: {
                         root.selectedIndex = index
@@ -379,6 +430,7 @@ Item {
             TextField {
                 id: passwordInput
                 Layout.fillWidth: true
+                enabled: !networkWidget.isBusy
                 Layout.preferredHeight: 40
                 placeholderText: "Password for " + root.selectedSsid
                 placeholderTextColor: theme.subText
@@ -416,7 +468,7 @@ Item {
                 Text {
                     id: connectLabel
                     anchors.centerIn: parent
-                    text: "Connect"
+                    text: networkWidget.pendingOp === "connect" ? "Connecting…" : "Connect"
                     color: theme.text
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeSm
@@ -425,6 +477,7 @@ Item {
                 MouseArea {
                     id: connectMouse
                     anchors.fill: parent
+                    enabled: !networkWidget.isBusy
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.submitPassword()

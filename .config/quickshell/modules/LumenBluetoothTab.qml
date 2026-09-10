@@ -8,14 +8,19 @@ Item {
     id: root
 
     required property var theme
+    required property var bluetoothActions
     property string query: ""
     property bool tabActive: false
     property int selectedIndex: 0
-    property int deviceStateRev: 0
-    property var adapter: Bluetooth.defaultAdapter
+    property bool watching: false
+    readonly property var adapter: bluetoothActions ? bluetoothActions.adapter : null
 
     readonly property int itemCount: listModel.values ? listModel.values.length : 0
     readonly property string statusText: {
+        if (root.bluetoothActions.lastError !== "")
+            return root.bluetoothActions.lastError
+        if (root.bluetoothActions.isBusy)
+            return root.bluetoothActions.operationLabel() + "…"
         if (root.adapter && root.adapter.discovering)
             return "scanning"
         const n = itemCount
@@ -23,13 +28,22 @@ Item {
     }
 
     onTabActiveChanged: {
-        if (!root.adapter)
-            return
         if (tabActive) {
+            if (!watching) {
+                watching = true
+                bluetoothActions.watch()
+            }
             refreshDevices()
-        } else {
-            root.adapter.discovering = false
-            root.adapter.discoverable = false
+        } else if (watching) {
+            watching = false
+            bluetoothActions.unwatch()
+        }
+    }
+
+    Component.onDestruction: {
+        if (watching) {
+            watching = false
+            bluetoothActions.unwatch()
         }
     }
 
@@ -40,7 +54,7 @@ Item {
     }
 
     function refreshDevices() {
-        deviceStateRev++
+        bluetoothActions.refreshDevices()
     }
 
     function resetSelection() {
@@ -72,31 +86,32 @@ Item {
         const item = currentItem()
         if (!item)
             return
-        if (item.kind === "scan") {
-            if (!root.adapter)
-                return
-            root.adapter.discovering = !root.adapter.discovering
-            root.adapter.discoverable = root.adapter.discovering
+        if (item.kind === "error") {
+            root.bluetoothActions.clearError()
             return
         }
+        if (item.kind === "scan") {
+            root.bluetoothActions.toggleScan()
+            return
+        }
+        if (root.bluetoothActions.isBusy)
+            return
         const dev = item.device
         if (!dev)
             return
         if (item.kind === "connected")
-            dev.connected = false
+            root.bluetoothActions.disconnectDevice(dev)
         else if (item.kind === "paired")
-            dev.connected = true
+            root.bluetoothActions.connectDevice(dev)
         else if (item.kind === "unpaired")
-            dev.pair()
-        refreshDevices()
+            root.bluetoothActions.pair(dev)
     }
 
     function forgetSelected() {
         const item = currentItem()
-        if (!item || !item.canForget || !item.device)
+        if (!item || !item.canForget || !item.device || root.bluetoothActions.isBusy)
             return
-        item.device.forget()
-        refreshDevices()
+        root.bluetoothActions.forget(item.device)
     }
 
     function handleKey(event) {
@@ -147,13 +162,31 @@ Item {
 
     function buildRows() {
         const rows = []
+        if (root.bluetoothActions.lastError !== "") {
+            rows.push({
+                key: "error",
+                kind: "error",
+                title: "Bluetooth error",
+                subtitle: root.bluetoothActions.lastError,
+                icon: "",
+                device: null,
+                canForget: false,
+                accent: false
+            })
+        }
+
         const discovering = !!(root.adapter && root.adapter.discovering)
         if (root.adapter && matches("scan")) {
             rows.push({
                 key: "scan",
                 kind: "scan",
-                title: discovering ? "Stop Scan" : "Scan",
-                subtitle: discovering ? "Looking for nearby devices" : "Find nearby devices",
+                title: root.bluetoothActions.pendingOp === "scan-start" ? "Starting scan…" :
+                       root.bluetoothActions.pendingOp === "scan-stop" ? "Stopping scan…" :
+                       discovering ? "Stop Scan" : "Scan",
+                subtitle: root.bluetoothActions.pendingOp === "scan-start" ||
+                          root.bluetoothActions.pendingOp === "scan-stop"
+                    ? "Waiting for the Bluetooth adapter"
+                    : discovering ? "Looking for nearby devices" : "Find nearby devices",
                 icon: "",
                 device: null,
                 canForget: false,
@@ -177,7 +210,9 @@ Item {
                     key: "connected:" + (d.address || label),
                     kind: "connected",
                     title: label,
-                    subtitle: deviceDetails(d, "connected"),
+                    subtitle: root.bluetoothActions.isPending(d)
+                        ? root.bluetoothActions.operationLabel() + "…"
+                        : deviceDetails(d, "connected"),
                     icon: "󰂯",
                     device: d,
                     canForget: true,
@@ -196,7 +231,9 @@ Item {
                 key: "paired:" + (d.address || label),
                 kind: "paired",
                 title: label,
-                subtitle: deviceDetails(d, "paired"),
+                subtitle: root.bluetoothActions.isPending(d)
+                    ? root.bluetoothActions.operationLabel() + "…"
+                    : deviceDetails(d, "paired"),
                 icon: "󰂲",
                 device: d,
                 canForget: true,
@@ -214,7 +251,9 @@ Item {
                 key: "unpaired:" + (d.address || label),
                 kind: "unpaired",
                 title: label,
-                subtitle: deviceDetails(d, "unpaired"),
+                subtitle: root.bluetoothActions.isPending(d)
+                    ? root.bluetoothActions.operationLabel() + "…"
+                    : deviceDetails(d, "unpaired"),
                 icon: "󰂲",
                 device: d,
                 canForget: false,
@@ -228,7 +267,10 @@ Item {
         id: listModel
         objectProp: "key"
         values: {
-            const _ = root.deviceStateRev
+            const _ = root.bluetoothActions.deviceStateRev
+            const _error = root.bluetoothActions.lastError
+            const _pending = root.bluetoothActions.pendingOp
+            const _pendingAddress = root.bluetoothActions.pendingAddress
             const _q = root.query
             const _disc = root.adapter ? root.adapter.discovering : false
             const _devs = root.adapter && root.adapter.devices ? root.adapter.devices.values : []
@@ -275,7 +317,8 @@ Item {
                 Text {
                     id: rowIcon
                     text: modelData.icon
-                    color: modelData.accent ? theme.success : theme.text
+                    color: modelData.kind === "error" ? theme.urgent :
+                           modelData.accent ? theme.success : theme.text
                     font.family: theme.fontFace
                     font.pixelSize: theme.fontSizeXl
 
@@ -322,13 +365,10 @@ Item {
                     MouseArea {
                         id: disconnectMouse
                         anchors.fill: parent
+                        enabled: !root.bluetoothActions.isBusy
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (modelData.device)
-                                modelData.device.connected = false
-                            root.refreshDevices()
-                        }
+                        onClicked: root.bluetoothActions.disconnectDevice(modelData.device)
                     }
                 }
 
@@ -342,13 +382,10 @@ Item {
                     MouseArea {
                         id: forgetMouse
                         anchors.fill: parent
+                        enabled: !root.bluetoothActions.isBusy
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (modelData.device)
-                                modelData.device.forget()
-                            root.refreshDevices()
-                        }
+                        onClicked: root.bluetoothActions.forget(modelData.device)
                     }
                 }
             }
@@ -356,6 +393,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 z: -1
+                enabled: modelData.kind === "error" || !root.bluetoothActions.isBusy
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.selectedIndex = index

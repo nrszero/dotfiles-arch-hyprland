@@ -24,6 +24,7 @@ PanelWindow {
     required property var dismissNotification
     required property var networkWidget
     required property var battery
+    required property var bluetoothActions
 
     signal closeRequested()
 
@@ -1084,6 +1085,7 @@ PanelWindow {
                 LumenBluetoothTab {
                     id: bluetoothTab
                     theme: root.theme
+                    bluetoothActions: root.bluetoothActions
                     query: root.parsedQuery.needle
                     tabActive: root.visible && root.showingSystemTab && root.parsedQuery.filter === "bluetooth"
                 }

@@ -21,6 +21,7 @@ PanelWindow {
     required property var dismissNotification   // function(index) from shell
     required property var networkWidget
     required property var battery
+    required property var bluetoothActions
     required property bool barVisible
     
     readonly property int wsPerMonitor: 5
@@ -412,7 +413,9 @@ PanelWindow {
                         text: networkWidget.isWifiActiveRoute ? "󰤥" : "󰈀"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl
-                        color: networkWidget.connectionState === 1 ? theme.accent :
+                        color: networkWidget.lastError !== "" ? theme.urgent :
+                               networkWidget.isBusy ? theme.accent :
+                               networkWidget.connectionState === 1 ? theme.accent :
                                networkWidget.connectionState === 2 ? theme.urgent :
                                networkWidget.currentWifiSsid !== "" ? theme.accent : theme.text 
                         
@@ -429,11 +432,13 @@ PanelWindow {
                     // Bluetooth
                     Text {
                         id: bluetoothIcon
-                        visible: Bluetooth.defaultAdapter
+                        visible: root.bluetoothActions && root.bluetoothActions.adapter
                         text: "󰂯"
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeXl
-                        color: Bluetooth.devices.values.some(d => d.connected) ? theme.accent : theme.text
+                        color: root.bluetoothActions.lastError !== "" ? theme.urgent :
+                               root.bluetoothActions.isBusy ? theme.accent :
+                               Bluetooth.devices.values.some(d => d.connected) ? theme.accent : theme.text
 
                         HoverHandler { id: bluetoothIconHover }
                         
@@ -548,6 +553,7 @@ PanelWindow {
         id: bluetoothPopup
         anchor.item: rightBarMod
         theme: root.theme
+        bluetoothActions: root.bluetoothActions
     }    
     NotificationCenter {
         id: notifCenter

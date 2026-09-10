@@ -12,7 +12,7 @@ Item {
     // The interface to monitor, as requested: enp15s0
     property string interfaceName: ""
     property string wifiInterfaceName: ""
-    property int pollInterval: 10000
+    property int pollInterval: 60000
     
     // 0: Disconnected/Error, 1: Connected, 2: Connecting
     property int connectionState: 0
@@ -56,9 +56,8 @@ Item {
                 const wifi = this.text.trim();
                 if (wifi !== "") {
                     root.wifiInterfaceName = wifi;
-                    // Trigger immediate wifi checks once found
-                    wifiScanCmd.running = true;
                     wifiActiveCmd.running = true;
+                    routeCheckCmd.running = true;
                 }
             }
         }
@@ -267,8 +266,8 @@ Item {
     }
     
     function forceScan() {
-        if (!wifiScanCmd.running) wifiScanCmd.running = true;
         if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
+        if (!routeCheckCmd.running) routeCheckCmd.running = true;
     }
 
     Timer {
@@ -285,12 +284,23 @@ Item {
                 nmcliCmd.running = true;
             }
             if (root.wifiInterfaceName !== "") {
-                if (!wifiScanCmd.running) wifiScanCmd.running = true;
                 if (!wifiActiveCmd.running) wifiActiveCmd.running = true;
             }
             if (!routeCheckCmd.running) {
                 routeCheckCmd.running = true;
             }
+        }
+    }
+
+    Timer {
+        interval: root.pollInterval
+        running: root.interfaceName === "" || root.wifiInterfaceName === ""
+        repeat: true
+        onTriggered: {
+            if (root.interfaceName === "" && !ethDetector.running)
+                ethDetector.running = true
+            if (root.wifiInterfaceName === "" && !wifiDetector.running)
+                wifiDetector.running = true
         }
     }
 }

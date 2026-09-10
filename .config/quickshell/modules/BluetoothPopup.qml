@@ -9,17 +9,18 @@ PopupWindow {
     id: root
 
     required property var theme
-    property var adapter: Bluetooth.defaultAdapter
-    property int deviceStateRev: 0
+    required property var bluetoothActions
+    readonly property var adapter: bluetoothActions ? bluetoothActions.adapter : null
+    property bool watching: false
 
     function refreshDevices() {
-        deviceStateRev++
+        bluetoothActions.refreshDevices()
     }
 
     ScriptModel {
         id: connectedModel
         values: {
-            const _ = root.deviceStateRev
+            const _ = root.bluetoothActions.deviceStateRev
             if (!root.adapter)
                 return []
             return [...root.adapter.devices.values].filter(d => d.connected)
@@ -29,7 +30,7 @@ PopupWindow {
     ScriptModel {
         id: pairedModel
         values: {
-            const _ = root.deviceStateRev
+            const _ = root.bluetoothActions.deviceStateRev
             if (!root.adapter)
                 return []
             return [...root.adapter.devices.values].filter(d => !d.connected && d.paired)
@@ -39,7 +40,7 @@ PopupWindow {
     ScriptModel {
         id: unpairedModel
         values: {
-            const _ = root.deviceStateRev
+            const _ = root.bluetoothActions.deviceStateRev
             if (!root.adapter)
                 return []
             return [...root.adapter.devices.values].filter(d => !d.connected && !d.paired)
@@ -109,17 +110,23 @@ PopupWindow {
     
     onVisibleChanged: {
         if (visible) {
+            if (!watching) {
+                watching = true
+                bluetoothActions.watch()
+            }
             hideTimer.stop()
             refreshDevices()
             Qt.callLater(updateHover)
-        } else {
-            // Stop scanning and hide the PC when the popup is closed
-            if (adapter) {
-                adapter.discovering = false;
-                adapter.discoverable = false;
-            } else {
-                console.warn("[BluetoothPopup] Adapter not found.")
-            }
+        } else if (watching) {
+            watching = false
+            bluetoothActions.unwatch()
+        }
+    }
+
+    Component.onDestruction: {
+        if (watching) {
+            watching = false
+            bluetoothActions.unwatch()
         }
     }
 
@@ -157,6 +164,51 @@ PopupWindow {
                     font.pixelSize: theme.fontSizeMd
                     font.bold: true
                     Layout.fillWidth: true
+                }
+            }
+
+            Rectangle {
+                visible: root.bluetoothActions.lastError !== ""
+                Layout.fillWidth: true
+                Layout.preferredHeight: visible ? errorRow.implicitHeight + 16 : 0
+                color: Qt.rgba(theme.urgent.r, theme.urgent.g, theme.urgent.b, 0.18)
+                radius: theme.radius
+                border.width: theme.borderWidth
+                border.color: theme.urgent
+
+                RowLayout {
+                    id: errorRow
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 8
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.bluetoothActions.lastError
+                        color: theme.text
+                        font.family: theme.fontFace
+                        font.pixelSize: theme.fontSizeSm
+                        wrapMode: Text.Wrap
+                    }
+
+                    Button {
+                        HoverHandler {
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                        background: Rectangle {
+                            color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
+                            radius: theme.radius
+                            border.width: theme.borderWidth
+                            border.color: parent.hovered ? theme.accent : "transparent"
+                        }
+                        contentItem: Text {
+                            text: "Dismiss"
+                            color: theme.text
+                            font.family: theme.fontFace
+                            font.pixelSize: theme.fontSizeSm
+                        }
+                        onClicked: root.bluetoothActions.clearError()
+                    }
                 }
             }
 
@@ -200,7 +252,9 @@ PopupWindow {
                             }
 
                             Text {
-                                text: deviceDetails(modelData, "connected")
+                                text: root.bluetoothActions.isPending(modelData)
+                                    ? root.bluetoothActions.operationLabel() + "…"
+                                    : deviceDetails(modelData, "connected")
                                 color: theme.subText
                                 font.family: theme.fontFace
                                 font.pixelSize: theme.fontSizeSm
@@ -217,12 +271,10 @@ PopupWindow {
                             MouseArea {
                                 id: connectedForgetMouse
                                 anchors.fill: parent
+                                enabled: !root.bluetoothActions.isBusy
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    modelData.forget()
-                                    root.refreshDevices()
-                                }
+                                onClicked: root.bluetoothActions.forget(modelData)
                             }
                         }
 
@@ -234,12 +286,10 @@ PopupWindow {
                             MouseArea {
                                 id: connectedDisconnectMouse
                                 anchors.fill: parent
+                                enabled: !root.bluetoothActions.isBusy
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    modelData.connected = false
-                                    root.refreshDevices()
-                                }
+                                onClicked: root.bluetoothActions.disconnectDevice(modelData)
                             }
                         }
                     }
@@ -281,6 +331,7 @@ PopupWindow {
                 // Scan Toggle Button
                 Button {
                     visible: root.adapter !== null
+                    enabled: !root.bluetoothActions.isBusy
                     HoverHandler {
                         cursorShape: Qt.PointingHandCursor
                     }
@@ -291,18 +342,14 @@ PopupWindow {
                         border.color: parent.hovered ? theme.accent : "transparent"
                     }
                     contentItem: Text {
-                        text: (root.adapter && root.adapter.discovering) ? "Stop Scan" : "Scan"
+                        text: root.bluetoothActions.pendingOp === "scan-start" ? "Starting…" :
+                              root.bluetoothActions.pendingOp === "scan-stop" ? "Stopping…" :
+                              (root.adapter && root.adapter.discovering) ? "Stop Scan" : "Scan"
                         color: theme.text
                         font.family: theme.fontFace
                         font.pixelSize: theme.fontSizeSm
                     }
-                    onClicked: {
-                        if (root.adapter) {
-                            root.adapter.discovering = !root.adapter.discovering;
-                            // Make the PC discoverable too; helps audio devices handshake
-                            root.adapter.discoverable = root.adapter.discovering;
-                        }
-                    }
+                    onClicked: root.bluetoothActions.toggleScan()
                 }
             }
 
@@ -363,7 +410,9 @@ PopupWindow {
                                         }
 
                                         Text {
-                                            text: deviceDetails(modelData, "paired")
+                                            text: root.bluetoothActions.isPending(modelData)
+                                                ? root.bluetoothActions.operationLabel() + "…"
+                                                : deviceDetails(modelData, "paired")
                                             color: theme.subText
                                             font.family: theme.fontFace
                                             font.pixelSize: theme.fontSizeSm
@@ -383,12 +432,10 @@ PopupWindow {
                                 MouseArea {
                                     id: pairedMouse
                                     anchors.fill: parent
+                                    enabled: !root.bluetoothActions.isBusy
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        modelData.connected = true
-                                        root.refreshDevices()
-                                    }
+                                    onClicked: root.bluetoothActions.connectDevice(modelData)
                                 }
 
                                 MouseArea {
@@ -399,12 +446,10 @@ PopupWindow {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 16
                                     height: 24
+                                    enabled: !root.bluetoothActions.isBusy
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        modelData.forget()
-                                        root.refreshDevices()
-                                    }
+                                    onClicked: root.bluetoothActions.forget(modelData)
                                 }
                             }
                         }
@@ -455,7 +500,9 @@ PopupWindow {
                                         }
 
                                         Text {
-                                            text: deviceDetails(modelData, "unpaired")
+                                            text: root.bluetoothActions.isPending(modelData)
+                                                ? root.bluetoothActions.operationLabel() + "…"
+                                                : deviceDetails(modelData, "unpaired")
                                             color: theme.subText
                                             font.family: theme.fontFace
                                             font.pixelSize: theme.fontSizeSm
@@ -468,12 +515,10 @@ PopupWindow {
                                 MouseArea {
                                     id: unpairedMouse
                                     anchors.fill: parent
+                                    enabled: !root.bluetoothActions.isBusy
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        modelData.pair()
-                                        root.refreshDevices()
-                                    }
+                                    onClicked: root.bluetoothActions.pair(modelData)
                                 }
                             }
                         }
