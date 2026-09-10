@@ -66,13 +66,12 @@ Item {
     property bool isInputReady: false
 
     function refreshAfterWake() {
-        if (!screenValid) {
-            console.log("[LockScreen] Ignoring wake refresh, screen is not a real output")
+        if (!isMain)
             return
-        }
         console.log("[LockScreen] Reloading wallpaper after wake on", targetScreen.name)
         wallpaper.source = ""
-        wallpaper.source = isMain ? "file:///var/tmp/greeter-wallpaper" : ""
+        wallpaper.source = "file:///var/tmp/greeter-wallpaper"
+        warpTimer.restart()
     }
 
     function togglePopup(target) {
@@ -85,10 +84,17 @@ Item {
     }
 
     onIsMainChanged: {
-        if (isMain)
+        if (isMain) {
+            context.noteMainReal(true)
             warpTimer.restart()
-        else
+        } else {
             warpTimer.stop()
+        }
+    }
+
+    Component.onCompleted: {
+        if (isMain)
+            context.noteMainReal(true)
     }
 
     Timer {

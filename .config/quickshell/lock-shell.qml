@@ -8,6 +8,18 @@ import "./modules"
 ShellRoot {
     id: root
 
+    PersistentProperties {
+        id: persist
+        reloadableId: "lockWake"
+
+        property real lastWakeUnix: 0
+    }
+
+    function rebindSurfaces() {
+        console.log("[Lock] Rebinding lock surfaces after wake")
+        Quickshell.reload(false)
+    }
+
     Scope {
         id: lockContext
         
@@ -17,6 +29,11 @@ ShellRoot {
         property bool maxTries: false
         property bool screensBlanked: false
         property bool blankInputArmed: false
+        property bool readyWritten: false
+        property bool mainIsReal: false
+        property real sessionStartUnix: 0
+
+        Component.onCompleted: sessionStartUnix = Date.now() / 1000
 
         signal unlocked()
 
@@ -24,6 +41,41 @@ ShellRoot {
             screensBlanked = false
             blankInputArmed = false
             blankTimer.restart()
+        }
+
+        function markReady() {
+            if (readyWritten)
+                return
+            readyWritten = true
+            readyWriter.running = true
+        }
+
+        function noteMainReal(isReal) {
+            if (isReal === mainIsReal)
+                return
+            mainIsReal = isReal
+            if (isReal)
+                readyDebounce.restart()
+            else
+                readyDebounce.stop()
+        }
+
+        Timer {
+            id: readyDebounce
+            interval: 1500
+            repeat: false
+            onTriggered: lockContext.markReady()
+        }
+
+        function handleHardwareWake(ts) {
+            const token = ts || 0
+            if (token && token <= persist.lastWakeUnix)
+                return
+            if (token)
+                persist.lastWakeUnix = token
+            console.log("[Lock] Hardware wake detected")
+            poke()
+            root.rebindSurfaces()
         }
 
         function pokeIfArmed() {
@@ -98,33 +150,72 @@ ShellRoot {
                 }
             }
         }
+
+        Process {
+            id: readyWriter
+            running: false
+            command: ["bash", "-c", "date +%s > /var/tmp/qs-lock-ready"]
+        }
     }
     
     WlSessionLock {
         id: lock
         locked: true
+        reloadableId: "sessionLock"
 
         WlSessionLockSurface {
             id: lockSurface
 
-            property bool wakeArmed: false
+            property real appliedWakeUnix: 0
+            property bool wakeFilePrimed: false
+            readonly property string screenKey: (screen && screen.name) ? screen.name : ""
+            readonly property bool screenReal: !!(screenKey && screenKey !== "FALLBACK")
 
-            Timer {
-                interval: 3000
-                running: true
-                repeat: false
-                onTriggered: lockSurface.wakeArmed = true
+            onScreenRealChanged: {
+                if (screen && screen.x === 0)
+                    lockContext.noteMainReal(screenReal)
+                if (!screenReal)
+                    return
+                console.log("[Lock] Surface left FALLBACK:", screenKey, "x=" + screen.x)
+                if (persist.lastWakeUnix > 0)
+                    Qt.callLater(lockSurface.refreshLocal)
+            }
+
+            function refreshLocal() {
+                if (uiLoader.item && uiLoader.item.refreshAfterWake)
+                    uiLoader.item.refreshAfterWake()
+            }
+
+            function handleWakeFile() {
+                let ts = parseInt(String(wakeFile.text()).trim(), 10)
+                if (!ts)
+                    return
+                if (!lockSurface.wakeFilePrimed) {
+                    lockSurface.wakeFilePrimed = true
+                    lockSurface.appliedWakeUnix = ts
+                    if (ts > lockContext.sessionStartUnix)
+                        lockContext.handleHardwareWake(ts)
+                    return
+                }
+                if (ts <= lockSurface.appliedWakeUnix)
+                    return
+                lockSurface.appliedWakeUnix = ts
+                lockContext.handleHardwareWake(ts)
             }
 
             FileView {
+                id: wakeFile
                 path: "/var/tmp/qs-wake"
                 watchChanges: true
-                onTextChanged: {
-                    if (!lockSurface.wakeArmed)
-                        return
-                    if (uiLoader.item && uiLoader.item.refreshAfterWake)
-                        uiLoader.item.refreshAfterWake()
-                }
+                onLoaded: lockSurface.handleWakeFile()
+                onTextChanged: lockSurface.handleWakeFile()
+            }
+
+            Timer {
+                interval: 2000
+                running: true
+                repeat: true
+                onTriggered: wakeFile.reload()
             }
 
             Rectangle {
