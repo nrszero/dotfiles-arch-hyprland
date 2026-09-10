@@ -153,6 +153,7 @@ Rectangle {
                 HoverHandler { id: prevHover }
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.currentIndex = (root.currentIndex - 1 + Mpris.players.values.length) % Mpris.players.values.length
                 }
@@ -172,6 +173,7 @@ Rectangle {
                 HoverHandler { id: playHover }
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Mpris.players.values[root.currentIndex]?.togglePlaying()
                 }
@@ -191,6 +193,7 @@ Rectangle {
                 HoverHandler { id: nextHover }
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.currentIndex = (root.currentIndex + 1) % Mpris.players.values.length
                 }

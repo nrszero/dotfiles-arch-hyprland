@@ -242,6 +242,7 @@ PopupWindow {
 
                                 MouseArea {
                                     anchors.fill: parent
+                                    hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: dismissNotification(index)
                                 }

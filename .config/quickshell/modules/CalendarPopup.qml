@@ -177,6 +177,7 @@ PopupWindow {
                     HoverHandler { id: prevHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: prevMonth()
                     }
@@ -200,6 +201,7 @@ PopupWindow {
                     HoverHandler { id: nextHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: nextMonth()
                     }

@@ -379,6 +379,7 @@ PopupWindow {
                         id: rowMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             if (model.inUse && model.ssid === networkWidget.currentWifiSsid)
                                 return
@@ -437,6 +438,10 @@ PopupWindow {
                 }
 
                 Button {
+                    HoverHandler {
+                        cursorShape: Qt.PointingHandCursor
+                    }
+
                     background: Rectangle {
                             color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                             radius: theme.radius

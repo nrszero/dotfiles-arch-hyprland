@@ -40,6 +40,7 @@ AuthPill {
 
             MouseArea {
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.powerClicked()
             }

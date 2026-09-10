@@ -62,6 +62,9 @@ Rectangle {
                     required property var modelData
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
+                    HoverHandler {
+                        cursorShape: Qt.PointingHandCursor
+                    }
                     background: Rectangle {
                         color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                         radius: theme.radius

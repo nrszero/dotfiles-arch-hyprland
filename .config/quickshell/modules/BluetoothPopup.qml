@@ -281,6 +281,9 @@ PopupWindow {
                 // Scan Toggle Button
                 Button {
                     visible: root.adapter !== null
+                    HoverHandler {
+                        cursorShape: Qt.PointingHandCursor
+                    }
                     background: Rectangle {
                         color: parent.hovered ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.28) : theme.surface
                         radius: theme.radius

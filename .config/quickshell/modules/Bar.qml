@@ -215,6 +215,7 @@ PanelWindow {
 
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.togglePopup(calendarPopup)
                 }
@@ -339,6 +340,7 @@ PanelWindow {
                             }
                             MouseArea {
                                 anchors.fill: parent
+                                hoverEnabled: true
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: (mouse) => {
@@ -380,6 +382,7 @@ PanelWindow {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(batteryPopup)
                         }
@@ -397,6 +400,7 @@ PanelWindow {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(volumePopup)
                         }
@@ -416,6 +420,7 @@ PanelWindow {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(networkPopup)
                         }
@@ -434,6 +439,7 @@ PanelWindow {
                         
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(bluetoothPopup)
                         }
@@ -472,6 +478,7 @@ PanelWindow {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(notifCenter)
                         }
@@ -488,6 +495,7 @@ PanelWindow {
 
                         MouseArea {
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.togglePopup(powerButtonPopup)
                         }

@@ -117,6 +117,7 @@ PopupWindow {
                     HoverHandler { id: prevSourceHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.requestPlayerChange(-1) // Triggers the signal
                     }
@@ -133,6 +134,7 @@ PopupWindow {
                     HoverHandler { id: nextSourceHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.requestPlayerChange(1) // Triggers the signal
                     }
@@ -267,6 +269,7 @@ PopupWindow {
                     HoverHandler { id: prevHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: activePlayer?.previous()
                     }
@@ -282,6 +285,7 @@ PopupWindow {
                     HoverHandler { id: playHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: activePlayer?.togglePlaying()
                     }
@@ -298,6 +302,7 @@ PopupWindow {
                     HoverHandler { id: nextHover }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: activePlayer?.next()
                     }

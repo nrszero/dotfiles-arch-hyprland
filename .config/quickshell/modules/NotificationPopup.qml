@@ -116,6 +116,7 @@ PanelWindow {
 
                                 MouseArea {
                                     anchors.fill: parent
+                                    hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: shellRoot.dismissNotification(index)
                                 }
