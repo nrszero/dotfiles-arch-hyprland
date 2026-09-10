@@ -1,11 +1,17 @@
 #!/bin/bash
 
-LOG_FILE="/var/tmp/quickshell-lock.log"
 READY_FILE="/var/tmp/qs-lock-ready"
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/quickshell"
+LOG_FILE="$LOG_DIR/lock.log"
 
-# Function to log to both screen and file
+if (umask 077; install -d -m 700 -- "$LOG_DIR" && touch -- "$LOG_FILE" && chmod 600 -- "$LOG_FILE"); then
+    exec >> "$LOG_FILE" 2>&1 || printf '%s\n' "WARNING: Could not redirect lock log; using inherited output." >&2
+else
+    printf '%s\n' "WARNING: Could not prepare lock log; using inherited output." >&2
+fi
+
 log() {
-    echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG_FILE"
+    printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*" >&2 || true
 }
 
 if [ "${1:-}" = "--wait-ready" ]; then
@@ -84,10 +90,11 @@ log "Command: quickshell -p lock-shell.qml"
 export QSG_RHI_BACKEND=vulkan # Prevent quickshell crash after sleep
 export QSG_RENDER_LOOP=basic # Prevent DPMS deadlock
 
-# Append so the startup lines above survive; do not truncate this file here.
-quickshell -p lock-shell.qml >> "$LOG_FILE" 2>&1
-
-EXIT_CODE=$?
+if quickshell -p lock-shell.qml; then
+    EXIT_CODE=0
+else
+    EXIT_CODE=$?
+fi
 log "Quickshell exited with code: $EXIT_CODE"
 
 if [ $EXIT_CODE -ne 0 ]; then
