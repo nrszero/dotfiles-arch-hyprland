@@ -219,13 +219,15 @@ Item {
             buttonText: "Unlock"
             buttonEnabled: !context.unlockInProgress
             placeholderText: {
+                if (context.authUnavailable)
+                    return "Authentication Service Unavailable"
                 if (context.showFailure)
                     return "Incorrect Password"
                 if (context.maxTries)
-                    return "Locked Account (10 min)"
+                    return "Account Temporarily Locked"
                 return "Enter Password"
             }
-            placeholderUrgent: context.showFailure || context.maxTries
+            placeholderUrgent: context.authUnavailable || context.showFailure || context.maxTries
             echoMode: TextInput.Password
             inputMethodHints: Qt.ImhSensitiveData
             text: context.currentText

@@ -27,6 +27,7 @@ ShellRoot {
         property bool unlockInProgress: false
         property bool showFailure: false
         property bool maxTries: false
+        property bool authUnavailable: false
         property bool screensBlanked: false
         property bool blankInputArmed: false
         property bool readyWritten: false
@@ -105,14 +106,28 @@ ShellRoot {
         
         onCurrentTextChanged: {
             showFailure = false
+            maxTries = false
+            authUnavailable = false
             poke()
         }
 
+        function resetAttempt() {
+            unlockInProgress = false
+            currentText = ""
+        }
+
         function tryUnlock() {
-            if (currentText.trim() === "") return
-            unlockInProgress = true
+            if (unlockInProgress || currentText.trim() === "")
+                return
+
+            showFailure = false
             maxTries = false
-            pam.start()
+            authUnavailable = false
+            unlockInProgress = true
+            if (!pam.start()) {
+                resetAttempt()
+                authUnavailable = true
+            }
         }
         
         PamContext {
@@ -123,8 +138,7 @@ ShellRoot {
             onPamMessage: {
                 console.log("[PAM] Message:", pam.message, "responseRequired:", pam.responseRequired)
                 
-                // Intercept the pam_faillock text warning to flag the lockout
-                if (pam.message && pam.message.includes("locked")) {
+                if (pam.message && pam.message.toLowerCase().includes("locked")) {
                     lockContext.maxTries = true
                 }
 
@@ -138,16 +152,21 @@ ShellRoot {
                 
                 if (result === PamResult.Success) {
                     lockContext.unlocked()
-                } else if (result === PamResult.Failed) {
-                    lockContext.currentText = ""
-                    
-                    // Only show standard failure if the account hasn't been flagged as locked
-                    if (!lockContext.maxTries) {
-                        lockContext.showFailure = true
-                    }
-                    
-                    lockContext.unlockInProgress = false
+                    return
                 }
+
+                const lockoutReported = lockContext.maxTries
+                lockContext.resetAttempt()
+                if (result === PamResult.MaxTries || lockoutReported)
+                    lockContext.maxTries = true
+                else if (result === PamResult.Failed)
+                    lockContext.showFailure = true
+                else
+                    lockContext.authUnavailable = true
+            }
+
+            onError: function(error) {
+                console.log("[PAM] Authentication service error:", error)
             }
         }
 

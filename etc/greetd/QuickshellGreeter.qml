@@ -98,7 +98,7 @@ ShellRoot {
                     Greetd.cancelSession()
                 pendingPassword = ""
                 pendingUsername = ""
-                context.showFailure = false
+                context.clearFeedback()
                 loginState.state = "username"
                 selectedUser = name
                 authStage.text = ""
@@ -107,9 +107,10 @@ ShellRoot {
 
             function attemptLogin() {
                 const txt = authStage.text.trim()
-                if (txt === "" || context.maxTries)
+                if (txt === "")
                     return
 
+                context.clearFeedback()
                 if (!otherMode) {
                     if (loginState.state === "username") {
                         pendingPassword = txt
@@ -152,7 +153,12 @@ ShellRoot {
                 enabled: isMain
 
                 property bool showFailure: false
-                property bool maxTries: false
+                property bool showLockout: false
+
+                function clearFeedback() {
+                    showFailure = false
+                    showLockout = false
+                }
 
                 function onAuthMessage(message, isError, responseRequired, echo) {
                     console.log("[GREETD] Message:", message, "responseRequired:", responseRequired)
@@ -168,16 +174,15 @@ ShellRoot {
                             authStage.text = ""
                             authStage.inputField.forceActiveFocus()
                         }
-                    } else if (message.includes("lock")) {
-                        context.maxTries = true
+                    } else if ((message || "").toLowerCase().includes("locked")) {
+                        context.showLockout = true
                     }
                 }
 
                 function onAuthFailure(message) {
                     console.log("[GREETD] Failed with message:", message)
                     mainWin.pendingPassword = ""
-                    if (!context.maxTries)
-                        context.showFailure = true
+                    context.showFailure = !context.showLockout
 
                     loginState.state = "username"
                     authStage.text = ""
@@ -185,17 +190,18 @@ ShellRoot {
                 }
 
                 function onReadyToLaunch() {
-                    context.showFailure = false
+                    context.clearFeedback()
                     root.persistLastUser(Greetd.user || mainWin.pendingUsername || mainWin.selectedUser)
                     Greetd.launch(root.sessionCommand)
                 }
 
                 function onError(error) {
                     mainWin.pendingPassword = ""
-                    if (!context.maxTries)
-                        context.showFailure = true
+                    context.showLockout = false
+                    context.showFailure = true
                     loginState.state = "username"
                     authStage.text = ""
+                    authStage.inputField.forceActiveFocus()
                 }
             }
 
@@ -309,13 +315,13 @@ ShellRoot {
                     placeholderText: {
                         if (context.showFailure)
                             return "Incorrect Password"
-                        if (context.maxTries)
-                            return "Locked Account (10 min)"
+                        if (context.showLockout)
+                            return "Account Temporarily Locked"
                         if (mainWin.askingUsername)
                             return "Enter Username"
                         return "Enter Password"
                     }
-                    placeholderUrgent: context.showFailure || context.maxTries
+                    placeholderUrgent: context.showFailure || context.showLockout
                     echoMode: mainWin.askingUsername ? TextInput.Normal : TextInput.Password
                     inputMethodHints: mainWin.askingUsername ? Qt.ImhNone : Qt.ImhSensitiveData
                     onCoverDismissed: {
@@ -327,7 +333,8 @@ ShellRoot {
                         if (Greetd.state !== GreetdState.Inactive && Greetd.state !== GreetdState.Launched)
                             Greetd.cancelSession()
                         mainWin.pendingPassword = ""
-                        context.showFailure = false
+                        mainWin.pendingUsername = ""
+                        context.clearFeedback()
                         loginState.state = "username"
                         authStage.text = ""
                         mainWin.isInputReady = false
