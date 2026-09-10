@@ -60,6 +60,13 @@ PopupWindow {
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds
     }
 
+    function skipBy(offset) {
+        if (activePlayer && activePlayer.canSeek) {
+            activePlayer.seek(offset)
+            activePlayer.positionChanged()
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         anchors.margins: 6
@@ -210,6 +217,22 @@ PopupWindow {
                     font.pixelSize: 11
                 }
 
+                Text {
+                    visible: activePlayer?.canSeek ?? false
+                    text: "−10"
+                    color: skipBackHover.hovered ? theme.text : theme.subText
+                    font.family: theme.fontFace
+                    font.pixelSize: 11
+
+                    HoverHandler { id: skipBackHover }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.skipBy(-10)
+                    }
+                }
+
                 // Interactive Slider
                 Rectangle {
                     id: trackSlider
@@ -241,6 +264,34 @@ PopupWindow {
 
                         onPositionChanged: (mouse) => { if (pressed) seekToMouse(mouse) }
                         onClicked: (mouse) => seekToMouse(mouse)
+                    }
+
+                    WheelHandler {
+                        enabled: activePlayer?.canSeek ?? false
+                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                        onWheel: (event) => {
+                            const dy = event.angleDelta.y !== 0 ? event.angleDelta.y : event.pixelDelta.y
+                            if (dy === 0)
+                                return
+                            root.skipBy(dy > 0 ? 10 : -10)
+                            event.accepted = true
+                        }
+                    }
+                }
+
+                Text {
+                    visible: activePlayer?.canSeek ?? false
+                    text: "+10"
+                    color: skipFwdHover.hovered ? theme.text : theme.subText
+                    font.family: theme.fontFace
+                    font.pixelSize: 11
+
+                    HoverHandler { id: skipFwdHover }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.skipBy(10)
                     }
                 }
 
