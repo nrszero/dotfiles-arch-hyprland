@@ -417,6 +417,11 @@ seed_default_wallpaper() {
     fi
 }
 
+remove_legacy_quickshell_logs() {
+    log "Removing legacy Quickshell logs from /var/tmp..."
+    sudo rm -f /var/tmp/quickshell-main.log /var/tmp/quickshell-lock.log /var/tmp/quickshell-greeter.log
+}
+
 generate_monitor_config() {
     local monitor_file="/etc/greetd/monitors.lua"
     sudo mkdir -p /etc/greetd
@@ -454,6 +459,7 @@ main() {
     stow_user
     stow_wallpapers
     seed_default_wallpaper
+    remove_legacy_quickshell_logs
 
     echo ""
     success "Dotfiles installed successfully!"
