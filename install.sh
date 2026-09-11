@@ -36,7 +36,89 @@ get_packages() {
         $0 == sec {flag=1; next}     # Start capturing when header matches
         /^\[.*\]$/ {flag=0}          # Stop capturing at the next header
         flag && NF {print $1}        # Print non-empty lines
-    ' "$DOTFILES/requirements.txt"
+    ' "$DOTFILES/install/requirements.txt"
+}
+
+append_kernel_params() {
+    local cmdline=$1
+    shift
+
+    local param
+    for param in "$@"; do
+        [[ " $cmdline " == *" $param "* ]] ||
+            cmdline="${cmdline:+$cmdline }$param"
+    done
+
+    printf '%s' "$cmdline"
+}
+
+configure_grub_kernel_params() {
+    local defaults_file="/etc/default/grub"
+    local current new_cmdline replacement
+
+    if [[ $(grep -c '^GRUB_CMDLINE_LINUX_DEFAULT=' "$defaults_file") -ne 1 ]]; then
+        warn "GRUB_CMDLINE_LINUX_DEFAULT is missing or duplicated; leaving GRUB untouched."
+        return
+    fi
+
+    current="$(sed -n 's/^GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"$/\1/p' "$defaults_file")"
+    new_cmdline="$(append_kernel_params "$current" "$@")"
+    if [[ "$new_cmdline" == "$current" ]]; then
+        sub_log "GRUB already contains the required NVIDIA kernel parameters."
+        return
+    fi
+
+    replacement="${new_cmdline//\\/\\\\}"
+    replacement="${replacement//&/\\&}"
+    replacement="${replacement//|/\\|}"
+    sudo sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*$|GRUB_CMDLINE_LINUX_DEFAULT=\"$replacement\"|" "$defaults_file"
+
+    sub_log "Regenerating GRUB configuration..."
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+}
+
+configure_uki_kernel_params() {
+    local cmdline_file="/etc/kernel/cmdline"
+    local current new_cmdline
+
+    current="$(< "$cmdline_file")"
+    new_cmdline="$(append_kernel_params "$current" "$@")"
+    if [[ "$new_cmdline" == "$current" ]]; then
+        sub_log "UKI command line already contains the required NVIDIA kernel parameters."
+        return
+    fi
+
+    printf '%s\n' "$new_cmdline" | sudo tee "$cmdline_file" >/dev/null
+
+    sub_log "Regenerating unified kernel images..."
+    sudo mkinitcpio -P
+}
+
+configure_nvidia_kernel_params() {
+    local backend_found=0
+    local -a params=(
+        "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+        "nvidia_drm.modeset=1"
+    )
+
+    if [[ -f /etc/default/grub && -f /boot/grub/grub.cfg ]] \
+            && command -v grub-mkconfig >/dev/null 2>&1; then
+        backend_found=1
+        sub_log "Updating NVIDIA kernel parameters for GRUB."
+        configure_grub_kernel_params "${params[@]}"
+    fi
+
+    if [[ -f /etc/kernel/cmdline ]] \
+            && command -v mkinitcpio >/dev/null 2>&1 \
+            && grep -qsE '^[[:space:]]*[[:alnum:]_]+_uki=' /etc/mkinitcpio.d/*.preset; then
+        backend_found=1
+        sub_log "Updating NVIDIA kernel parameters for UKI."
+        configure_uki_kernel_params "${params[@]}"
+    fi
+
+    if (( ! backend_found )); then
+        warn "No usable GRUB or mkinitcpio UKI backend was detected; leaving boot configuration untouched."
+    fi
 }
 
 check_dependencies() {
@@ -87,7 +169,7 @@ install_packages() {
         return
     fi
     
-    log "Parsing packages from requirements.txt..."
+    log "Parsing packages from install/requirements.txt..."
     
     # Read packages into an array safely
     mapfile -t req_pkgs < <(get_packages "required")
@@ -106,54 +188,105 @@ install_packages() {
 }
 
 config_system() {
-    # CPU Detection for integrated Vulkan drivers
-    if grep -qi "GenuineIntel" /proc/cpuinfo; then
-        sub_log "Intel CPU detected. Installing Intel Vulkan drivers..."
-        mapfile -t cpu_pkgs < <(get_packages "intel")
-        "$INSTALLER" -S --needed --noconfirm "${cpu_pkgs[@]}"
-    elif grep -qi "AuthenticAMD" /proc/cpuinfo; then
-        sub_log "AMD CPU detected. Installing AMD Vulkan drivers..."
-        mapfile -t cpu_pkgs < <(get_packages "amd")
-        "$INSTALLER" -S --needed --noconfirm "${cpu_pkgs[@]}"
-    else
-        sub_log "Could not explicitly identify Intel or AMD CPU. Skipping specific Vulkan drivers."
+    if ! command -v lspci >/dev/null 2>&1; then
+        warn "lspci is unavailable; install pciutils before configuring GPU drivers."
+        return 1
     fi
 
-    # Check if an Nvidia GPU is present
-    if lspci | grep -iE 'vga|3d' | grep -iq 'nvidia'; then
-        sub_log "NVIDIA GPU detected."
+    local -a gpu_vendors=()
+    local -a gpu_pkgs=()
+    local -a nvidia_device_ids=()
+    local vendor package_section vendor_name device
+    local nvidia_id_file="$DOTFILES/install/data/nvidia-open-gpu-ids.txt"
+    local nvidia_detected=0
+    local nvidia_manual=0
 
-        sub_log "Installing NVIDIA packages from requirements.txt"
-        mapfile -t nvidia_pkgs < <(get_packages "nvidia")
-        "$INSTALLER" -S --needed --noconfirm "${nvidia_pkgs[@]}"
+    mapfile -t gpu_vendors < <(
+        LC_ALL=C lspci -Dn |
+            awk '$2 ~ /^03/ { split($3, id, ":"); print tolower(id[1]) }' |
+            LC_ALL=C sort -u
+    )
+
+    if (( ${#gpu_vendors[@]} == 0 )); then
+        warn "No PCI display controller was detected; skipping GPU-specific Vulkan drivers."
+    fi
+
+    for vendor in "${gpu_vendors[@]}"; do
+        if [[ "$vendor" == "10de" ]]; then
+            nvidia_detected=1
+            break
+        fi
+    done
+
+    if (( nvidia_detected )); then
+        if [[ ! -r "$nvidia_id_file" ]]; then
+            warn "The NVIDIA open-module compatibility list is missing: $nvidia_id_file"
+            nvidia_manual=1
+        else
+            mapfile -t nvidia_device_ids < <(
+                LC_ALL=C lspci -Dn |
+                    awk '$2 ~ /^03/ {
+                        split(tolower($3), id, ":")
+                        if (id[1] == "10de") print id[2]
+                    }' |
+                    LC_ALL=C sort -u
+            )
+
+            if (( ${#nvidia_device_ids[@]} == 0 )); then
+                warn "NVIDIA was detected, but its display-controller device ID could not be read."
+                nvidia_manual=1
+            fi
+
+            for device in "${nvidia_device_ids[@]}"; do
+                if grep -Fxq -- "$device" "$nvidia_id_file"; then
+                    sub_log "NVIDIA GPU 10de:$device supports the open kernel modules."
+                else
+                    warn "NVIDIA GPU 10de:$device is not in the reviewed open-module compatibility list."
+                    nvidia_manual=1
+                fi
+            done
+        fi
+
+        if (( nvidia_manual )); then
+            warn "Automatic NVIDIA setup stopped; no NVIDIA packages, services, or boot settings were changed."
+            warn "Select the appropriate proprietary or legacy driver manually for the reported PCI ID."
+            return 1
+        fi
+    fi
+
+    for vendor in "${gpu_vendors[@]}"; do
+        case "$vendor" in
+            8086)
+                vendor_name="Intel"
+                package_section="intel"
+                ;;
+            1002)
+                vendor_name="AMD"
+                package_section="amd"
+                ;;
+            10de)
+                vendor_name="NVIDIA"
+                package_section="nvidia-open"
+                ;;
+            *)
+                warn "Unsupported display-controller vendor ID $vendor; skipping its Vulkan drivers."
+                continue
+                ;;
+        esac
+
+        sub_log "$vendor_name GPU detected (vendor ID $vendor). Installing its driver packages..."
+        mapfile -t gpu_pkgs < <(get_packages "$package_section")
+        "$INSTALLER" -S --needed --noconfirm "${gpu_pkgs[@]}"
+    done
+
+    if (( nvidia_detected )); then
 
         sub_log "Enabling Wayland sleep services..."
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
-                
-        # Append kernel parameter if not already present
-        if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/default/grub; then
-            sub_log "Adding NVreg_PreserveVideoMemoryAllocations to GRUB..."
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia.NVreg_PreserveVideoMemoryAllocations=1 /' /etc/default/grub
-            sudo grub-mkconfig -o /boot/grub/grub.cfg
-        fi
-        if ! grep -q "NVreg_PreserveVideoMemoryAllocations" /etc/kernel/cmdline; then
-            sub_log "Adding NVreg_PreserveVideoMemoryAllocations to UKI cmdline..."
-            sudo sed -i 's/root=.* rw/& nvidia.NVreg_PreserveVideoMemoryAllocations=1/' /etc/kernel/cmdline
-            sudo mkinitcpio -P
-        fi
 
-        if ! grep -q "nvidia_drm.modeset" /etc/default/grub; then
-            sub_log "Adding nvidia_drm.modeset to GRUB..."
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&nvidia_drm.modeset=1 /' /etc/default/grub
-            sudo grub-mkconfig -o /boot/grub/grub.cfg
-        fi
-        if ! grep -q "nvidia_drm.modeset" /etc/kernel/cmdline; then
-            sub_log "Adding nvidia_drm.modeset to UKI cmdline..."
-            sudo sed -i 's/root=.* rw/& nvidia_drm.modeset=1/' /etc/kernel/cmdline
-            sudo mkinitcpio -P
-        fi
+        configure_nvidia_kernel_params
     else
-        sub_log "Non-NVIDIA GPU detected. Skipping proprietary sleep hooks."
+        sub_log "No NVIDIA GPU detected. Skipping NVIDIA sleep hooks."
     fi
     
     # Bluetooth hardware detection
@@ -300,4 +433,6 @@ main() {
     sub_log "Configure monitors in /etc/greetd/monitors.lua, or after login use Lumen (SUPER + SPACE) → Display."
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

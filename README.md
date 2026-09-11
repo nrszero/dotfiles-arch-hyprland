@@ -10,7 +10,7 @@ User configs in `~/.config` are symlinked with GNU Stow. System files under `/et
 - **Quickshell** QML-based UI (Status Bar, Login Screen, Lock Screen, and Workspace Preview).
 - **Wallpaper Slideshow** with custom keybinds using awww.
 - **Display Manager** using greetd with Hyprland integration.
-- **Hardware Detection** detects Intel or AMD CPUs to install Vulkan drivers, and configures NVIDIA GPUs.
+- **Hardware Detection** installs drivers for every detected Intel, AMD, or supported NVIDIA GPU.
 - **Neovim** Lua-based editor configuration with LSP and plugins.
 - **Simple Installation** just run the install.sh. 
 
@@ -94,8 +94,9 @@ SKIP_PACKAGES=1 ./install.sh
 
 - Installs all required packages.
 - Safely backs up any ~/.config files to a timestamped ~/.config.bak/ directory.
-- Detects Intel or AMD CPUs to dynamically install the correct Vulkan drivers.
-- Auto-detects NVIDIA GPU and configures accordingly.
+- Detects PCI display controllers and installs each vendor's Vulkan driver stack, including hybrid systems.
+- Automatically configures NVIDIA's open kernel modules only for device IDs in the pinned NVIDIA compatibility list.
+- Stops before NVIDIA-specific changes on older or unknown GPUs so the appropriate proprietary or legacy driver can be selected manually.
 - Scans for Bluetooth hardware and automatically enables bluetooth.service if found.
 - Symlinks `~/.config` with Stow.
 - Copies system configs to `/etc` with rsync (requires sudo).
@@ -106,6 +107,16 @@ SKIP_PACKAGES=1 ./install.sh
 **Greetd login screen not loading**
 - Arrange monitors in Lumen (`SUPER + SPACE` → Display) or edit `/etc/greetd/monitors.lua` as in the post-install step above.
 - Verify greetd service is enabled: `sudo systemctl enable greetd`.
+
+**NVIDIA GPU requires manual driver selection**
+- Note the `10de:xxxx` PCI ID printed by the installer.
+- Check that ID against NVIDIA's supported-GPU documentation and install the appropriate proprietary or legacy driver.
+- The installer intentionally does not guess a legacy AUR package branch.
+
+**NVIDIA boot parameter backend**
+- The installer updates every usable GRUB and mkinitcpio UKI configuration it detects.
+- If both are configured, both are updated without prompting so fallback entries remain consistent.
+- If no usable backend can be identified, no boot configuration is changed.
 
 ## ⚙️ Configuration Highlights
 

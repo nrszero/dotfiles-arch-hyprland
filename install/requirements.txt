@@ -1,6 +1,7 @@
 [required]
 awww-git
 brightnessctl
+pciutils
 hyprland
 hypridle
 hyprshot
@@ -61,7 +62,7 @@ discord
 visual-studio-code-bin
 krita
 
-[nvidia]
+[nvidia-open]
 nvidia-open-dkms
 nvidia-settings
 lib32-nvidia-utils
