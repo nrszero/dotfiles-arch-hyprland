@@ -328,6 +328,20 @@ copy_etc() {
     success "System configuration copied with correct root ownership and permissions."
 }
 
+install_sleep_hooks() {
+    local src="$DOTFILES/usr/lib/systemd/system-sleep/98-gs65-wifi-unblock.sh"
+    local dest="/usr/lib/systemd/system-sleep/98-gs65-wifi-unblock.sh"
+
+    if [[ ! -f "$src" ]]; then
+        log "No sleep hooks found in dotfiles/usr/lib/systemd/system-sleep/. Skipping."
+        return
+    fi
+
+    log "Installing systemd sleep hooks..."
+    sudo install -D -m 755 "$src" "$dest"
+    success "Sleep hooks installed to /usr/lib/systemd/system-sleep/."
+}
+
 stow_user() {
     log "Checking for existing user configs to backup..."
     local config_target="$HOME/.config"
@@ -456,6 +470,7 @@ main() {
     install_packages
     generate_monitor_config
     copy_etc
+    install_sleep_hooks
     stow_user
     stow_wallpapers
     seed_default_wallpaper
