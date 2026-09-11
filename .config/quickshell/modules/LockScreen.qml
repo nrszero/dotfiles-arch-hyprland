@@ -70,7 +70,7 @@ Item {
             return
         console.log("[LockScreen] Reloading wallpaper after wake on", targetScreen.name)
         wallpaper.source = ""
-        wallpaper.source = "file:///var/tmp/greeter-wallpaper"
+        wallpaper.source = "file:///var/tmp/live-wallpaper"
         warpTimer.restart()
     }
 
@@ -126,7 +126,7 @@ Item {
         Image {
             id: wallpaper
             anchors.fill: parent
-            source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
+            source: isMain ? "file:///var/tmp/live-wallpaper" : ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: false
             cache: false

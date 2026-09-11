@@ -223,7 +223,7 @@ ShellRoot {
                 Image {
                     id: wallpaper
                     anchors.fill: parent
-                    source: isMain ? "file:///var/tmp/greeter-wallpaper" : ""
+                    source: isMain ? "file:///var/tmp/live-wallpaper" : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     cache: false

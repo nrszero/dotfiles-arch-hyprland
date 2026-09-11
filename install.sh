@@ -390,6 +390,33 @@ stow_wallpapers() {
     fi
 }
 
+seed_default_wallpaper() {
+    local src="/usr/share/wallpapers/anime-scenery/alone-in-the-world.jpg"
+    local tmp=""
+
+    log "Seeding greeter default wallpaper..."
+
+    if [[ -f "$src" ]] && command -v magick >/dev/null; then
+        tmp=$(mktemp --suffix=.jpg)
+        if ! magick "$src" -resize 2560x1440^ -gravity center -extent 2560x1440 -blur 0x8 -quality 85 "$tmp" \
+                || ! sudo install -m 644 "$tmp" /etc/greetd/default-wallpaper; then
+            warn "Could not create /etc/greetd/default-wallpaper"
+        fi
+        rm -f "$tmp"
+    else
+        warn "Could not create /etc/greetd/default-wallpaper"
+    fi
+
+    # /var/tmp is sticky: a root-owned symlink cannot be replaced later by
+    # wallpaper-ctl (runs as the user). Recreate install seeds as the user.
+    if [[ -L /var/tmp/live-wallpaper ]]; then
+        sudo rm -f /var/tmp/live-wallpaper
+    fi
+    if [[ ! -e /var/tmp/live-wallpaper ]]; then
+        ln -sfn /etc/greetd/default-wallpaper /var/tmp/live-wallpaper
+    fi
+}
+
 generate_monitor_config() {
     local monitor_file="/etc/greetd/monitors.lua"
     sudo mkdir -p /etc/greetd
@@ -426,7 +453,8 @@ main() {
     copy_etc
     stow_user
     stow_wallpapers
-    
+    seed_default_wallpaper
+
     echo ""
     success "Dotfiles installed successfully!"
     sub_log "Note: Some system changes may require a reboot or 'sudo systemctl daemon-reload'."

@@ -13,7 +13,7 @@ STATE_FILE="$STATE_DIR/state.json"
 DEFAULT_FOLDER="anime-scenery"
 DEFAULT_INTERVAL=600
 BLUR_RADIUS="0x8"
-LOCK_WALL_TMP="/var/tmp/greeter-wallpaper.tmp"
+LOCK_WALL_TMP="/var/tmp/live-wallpaper.tmp"
 RESIZE_TYPE="crop"
 SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 
@@ -40,16 +40,16 @@ wait_for_awww() {
 
 greeter_restore() {
 	log "--- Restoring persistent wallpaper for greeter ---"
-	if [ -f "/var/tmp/greeter-wallpaper" ]; then
+	if [ -f "/var/tmp/live-wallpaper" ]; then
 		awww clear 000000 >> "$LOG_FILE" 2>&1
-		AWWW_OUTPUT=$(awww img --resize="crop" "/var/tmp/greeter-wallpaper" </dev/null 2>&1)
+		AWWW_OUTPUT=$(awww img --resize="crop" "/var/tmp/live-wallpaper" </dev/null 2>&1)
 		if [ -z "$AWWW_OUTPUT" ]; then
 			log "awww daemon response: (Command executed silently/successfully)"
 		else
 			log "awww daemon response: $AWWW_OUTPUT"
 		fi
 	else
-		log "ERROR: /var/tmp/greeter-wallpaper does not exist!"
+		log "ERROR: /var/tmp/live-wallpaper does not exist!"
 	fi
 }
 
@@ -300,7 +300,7 @@ EOF
 	log "Reloading Hyprland..."
 	hyprctl reload >> "$LOG_FILE" 2>&1
 
-	convert "$img" \
+	magick "$img" \
 		-resize 2560x1440^ \
 		-gravity center \
 		-extent 2560x1440 \
@@ -308,7 +308,16 @@ EOF
 		-quality 85 \
 		"$LOCK_WALL_TMP"
 	chmod 644 "$LOCK_WALL_TMP"
-	mv "$LOCK_WALL_TMP" "/var/tmp/greeter-wallpaper"
+	# Sticky /var/tmp only allows replacing files we own. Drop a leftover
+	# symlink so mv does not fail and leave the greeter on the install default.
+	if [ -L "/var/tmp/live-wallpaper" ]; then
+		rm -f "/var/tmp/live-wallpaper" 2>/dev/null || true
+	fi
+	if ! mv -fT "$LOCK_WALL_TMP" "/var/tmp/live-wallpaper"; then
+		log "ERROR: cannot replace /var/tmp/live-wallpaper (root-owned in sticky /var/tmp?)"
+		rm -f "$LOCK_WALL_TMP"
+		return 1
+	fi
 	log "Set wallpaper: $(basename "$img") (blur=$BLUR_RADIUS)"
 }
 
