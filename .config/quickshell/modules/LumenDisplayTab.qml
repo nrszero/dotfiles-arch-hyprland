@@ -137,6 +137,19 @@ Item {
         return String(Math.round(hz * 100) / 100)
     }
 
+    function formatScale(scale) {
+        const n = Number(scale)
+        if (!isFinite(n) || n <= 0)
+            return "1"
+        const presets = [1, 1.25, 1.5, 1.75, 2]
+        for (let i = 0; i < presets.length; i++) {
+            if (Math.abs(n - presets[i]) < 0.02)
+                return String(presets[i])
+        }
+        const r = Math.round(n * 100) / 100
+        return Math.abs(r - Math.round(r)) < 0.001 ? String(Math.round(r)) : String(r)
+    }
+
     function modeString(w, h, hz) {
         return w + "x" + h + "@" + formatHz(hz)
     }
@@ -625,7 +638,7 @@ Item {
                 const list = root.drafts
                 const pad = 20
                 if (!list || list.length === 0)
-                    return { scale: 0.1, originX: 0, originY: 0, pad: pad }
+                    return { scale: 0.1, originX: 0, originY: 0, offsetX: pad, offsetY: pad }
                 let minX = Infinity
                 let minY = Infinity
                 let maxX = -Infinity
@@ -641,25 +654,27 @@ Item {
                 const bh = Math.max(1, maxY - minY)
                 const sx = (width - pad * 2) / bw
                 const sy = (height - pad * 2) / bh
+                const scale = Math.max(0.04, Math.min(sx, sy, 0.35))
                 return {
-                    scale: Math.max(0.04, Math.min(sx, sy, 0.35)),
+                    scale: scale,
                     originX: minX,
                     originY: minY,
-                    pad: pad
+                    offsetX: (width - bw * scale) / 2,
+                    offsetY: (height - bh * scale) / 2
                 }
             }
 
             function layoutToCanvasX(x) {
-                return fit.pad + (x - fit.originX) * fit.scale
+                return fit.offsetX + (x - fit.originX) * fit.scale
             }
             function layoutToCanvasY(y) {
-                return fit.pad + (y - fit.originY) * fit.scale
+                return fit.offsetY + (y - fit.originY) * fit.scale
             }
             function canvasToLayoutX(cx) {
-                return fit.originX + (cx - fit.pad) / fit.scale
+                return fit.originX + (cx - fit.offsetX) / fit.scale
             }
             function canvasToLayoutY(cy) {
-                return fit.originY + (cy - fit.pad) / fit.scale
+                return fit.originY + (cy - fit.offsetY) / fit.scale
             }
 
             ScriptModel {
@@ -675,6 +690,8 @@ Item {
                     required property var modelData
                     required property int index
                     readonly property bool isSelected: root.selectedDraft && root.selectedDraft.name === modelData.name
+                    readonly property real laidX: canvas.fit.offsetX + (modelData.x - canvas.fit.originX) * canvas.fit.scale
+                    readonly property real laidY: canvas.fit.offsetY + (modelData.y - canvas.fit.originY) * canvas.fit.scale
                     width: Math.max(48, modelData.lw * canvas.fit.scale)
                     height: Math.max(32, modelData.lh * canvas.fit.scale)
                     radius: theme.radius
@@ -685,11 +702,11 @@ Item {
 
                     Binding on x {
                         when: !dragArea.drag.active
-                        value: canvas.layoutToCanvasX(modelData.x)
+                        value: laidX
                     }
                     Binding on y {
                         when: !dragArea.drag.active
-                        value: canvas.layoutToCanvasY(modelData.y)
+                        value: laidY
                     }
 
                     Column {
@@ -843,10 +860,10 @@ Item {
                     }
 
                     DisplayCombo {
-                        Layout.preferredWidth: 90
+                        Layout.preferredWidth: 128
                         label: "Scale"
                         model: ["1", "1.25", "1.5", "1.75", "2"]
-                        shownValue: root.selectedDraft ? String(root.selectedDraft.scale) : "1"
+                        shownValue: root.selectedDraft ? root.formatScale(root.selectedDraft.scale) : "1"
                         onPicked: (value) => root.setSelectedScale(+value)
                     }
 
@@ -888,8 +905,26 @@ Item {
         signal picked(string value)
 
         Layout.preferredHeight: 36
+        padding: 0
+        leftPadding: 0
+        rightPadding: 4
+        hoverEnabled: true
         font.family: theme.fontFace
         font.pixelSize: theme.fontSizeSm
+        HoverHandler {
+            cursorShape: Qt.PointingHandCursor
+        }
+        indicator: Item {
+            implicitWidth: 14
+            implicitHeight: 16
+            Text {
+                anchors.centerIn: parent
+                text: "▾"
+                color: cb.hovered || cb.popup.visible ? theme.accent : theme.subText
+                font.family: theme.fontFace
+                font.pixelSize: 11
+            }
+        }
         currentIndex: {
             const v = String(cb.shownValue || "")
             const m = cb.model
@@ -910,10 +945,12 @@ Item {
         }
 
         background: Rectangle {
-            color: theme.background
+            color: cb.hovered || cb.popup.visible
+                   ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18)
+                   : theme.background
             radius: theme.radius
             border.width: theme.borderWidth
-            border.color: cb.popup.visible ? theme.accent : "transparent"
+            border.color: cb.hovered || cb.popup.visible ? theme.accent : "transparent"
         }
         contentItem: Text {
             text: cb.label + "  " + (cb.shownValue || "")
@@ -921,7 +958,7 @@ Item {
             font: cb.font
             verticalAlignment: Text.AlignVCenter
             leftPadding: 8
-            rightPadding: 8
+            rightPadding: 2
             elide: Text.ElideRight
         }
         delegate: ItemDelegate {
