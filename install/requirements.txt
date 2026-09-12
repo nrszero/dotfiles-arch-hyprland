@@ -32,6 +32,8 @@ wireplumber
 bluez
 bluez-utils
 networkmanager
+tlp
+tlp-pd
 imagemagick
 noto-fonts
 noto-fonts-emoji

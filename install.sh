@@ -39,6 +39,26 @@ get_packages() {
     ' "$DOTFILES/install/requirements.txt"
 }
 
+# Always install headers for the running kernel (linux-headers, linux-zen-headers, …).
+kernel_headers_package() {
+    local kernel_pkg
+    kernel_pkg="$(pacman -Qqo "/usr/lib/modules/$(uname -r)" 2>/dev/null | head -n1 || true)"
+    if [[ -z "$kernel_pkg" ]]; then
+        return 1
+    fi
+    printf '%s-headers\n' "$kernel_pkg"
+}
+
+ensure_kernel_headers() {
+    local headers
+    if ! headers="$(kernel_headers_package)"; then
+        headers="linux-headers"
+        warn "Could not determine the running kernel package; falling back to $headers."
+    fi
+    sub_log "Installing $headers for kernel $(uname -r)..."
+    "$INSTALLER" -S --needed --noconfirm "$headers"
+}
+
 append_kernel_params() {
     local cmdline=$1
     shift
@@ -170,6 +190,8 @@ install_packages() {
     fi
     
     log "Parsing packages from install/requirements.txt..."
+
+    ensure_kernel_headers
     
     # Read packages into an array safely
     mapfile -t req_pkgs < <(get_packages "required")
@@ -303,6 +325,9 @@ config_system() {
     # Enable required services
     sub_log "Enabling greetd service..."
     sudo systemctl enable greetd.service
+
+    sub_log "Enabling TLP power management..."
+    sudo systemctl enable tlp.service tlp-pd.service
 }
 
 copy_etc() {

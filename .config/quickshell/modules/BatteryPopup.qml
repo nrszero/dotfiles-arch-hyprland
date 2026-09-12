@@ -170,7 +170,9 @@ PopupWindow {
                     const _full = battery.energyFullWh
                     const _h = battery.health
                     const _c = battery.battCycles
+                    const _profile = battery.profileLabel()
                     return [
+                        { label: "Power profile", value: _profile || "—" },
                         { label: "Power draw", value: root.fmt(_w, 1, " W") },
                         { label: "Voltage", value: root.fmt(_v, 2, " V") },
                         { label: "Capacity", value: _now >= 0 && _full >= 0

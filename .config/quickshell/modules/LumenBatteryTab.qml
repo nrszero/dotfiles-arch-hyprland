@@ -98,6 +98,7 @@ Item {
         }
 
         const stats = [
+            { key: "profile", title: "Power profile", subtitle: b.profileLabel() || "—" },
             { key: "power", title: "Power draw", subtitle: fmt(b.powerW, 1, " W") },
             { key: "voltage", title: "Voltage", subtitle: fmt(b.voltageV, 2, " V") },
             { key: "capacity", title: "Capacity", subtitle: b.energyNowWh >= 0 && b.energyFullWh >= 0
@@ -129,6 +130,7 @@ Item {
             const _lvl = root.battery ? root.battery.battLevel : 0
             const _st = root.battery ? root.battery.battStatus : ""
             const _w = root.battery ? root.battery.powerW : -1
+            const _profile = root.battery ? root.battery.powerProfile : ""
             return root.buildRows()
         }
     }

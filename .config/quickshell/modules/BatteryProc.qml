@@ -20,6 +20,7 @@ Item {
     property real powerW: -1
     property real health: -1
     property real hoursLeft: -1
+    property string powerProfile: ""
 
     readonly property int battPct: Math.round(battLevel * 100)
     readonly property int battStep: Math.min(10, Math.max(0, Math.round(battPct / 10)))
@@ -78,6 +79,19 @@ Item {
         return battCharging ? span + " until full" : span + " remaining"
     }
 
+    function profileLabel() {
+        switch (powerProfile) {
+        case "performance":
+            return "Performance"
+        case "balanced":
+            return "Balanced"
+        case "power-saver":
+            return "Power saver"
+        default:
+            return powerProfile
+        }
+    }
+
     property int liveWatchers: 0
     readonly property bool live: liveWatchers > 0
 
@@ -93,6 +107,9 @@ Item {
         if (battProc.running)
             battProc.running = false
         battProc.running = true
+        if (profileProc.running)
+            profileProc.running = false
+        profileProc.running = true
     }
 
     onLiveChanged: {
@@ -235,6 +252,23 @@ Item {
                     fields[line.slice(0, eq)] = line.slice(eq + 1)
                 }
                 root.applyFields(fields)
+            }
+        }
+    }
+
+    Process {
+        id: profileProc
+        command: ["sh", "-c",
+            "p=$(busctl get-property org.freedesktop.UPower.PowerProfiles /org/freedesktop/UPower/PowerProfiles org.freedesktop.UPower.PowerProfiles ActiveProfile 2>/dev/null) " +
+            "|| p=$(busctl get-property net.hadess.PowerProfiles /net/hadess/PowerProfiles net.hadess.PowerProfiles ActiveProfile 2>/dev/null) " +
+            "|| true; " +
+            "printf '%s\\n' \"$p\""
+        ]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const quoted = text.trim().match(/"([^"]+)"/)
+                root.powerProfile = quoted ? quoted[1] : ""
             }
         }
     }
