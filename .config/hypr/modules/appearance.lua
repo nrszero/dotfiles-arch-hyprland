@@ -38,7 +38,7 @@ hl.config({
         },
         -- Set to true enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,
-        allow_tearing = false,
+        allow_tearing = true,
         layout = "dwindle",
     },
 })
