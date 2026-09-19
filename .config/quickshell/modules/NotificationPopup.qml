@@ -80,6 +80,8 @@ PanelWindow {
                                 visible: model.icon !== ""
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
+                                sourceSize.width: 56
+                                sourceSize.height: 56
                                 source: model.icon.toString().startsWith("/") ? "file://" + model.icon : model.icon
                                 fillMode: Image.PreserveAspectFit
                                 cache: true

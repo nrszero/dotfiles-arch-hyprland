@@ -208,6 +208,8 @@ Item {
                             visible: modelData.kind === "notif" && modelData.icon !== ""
                             Layout.preferredWidth: 28
                             Layout.preferredHeight: 28
+                            sourceSize.width: 56
+                            sourceSize.height: 56
                             source: modelData.icon && modelData.icon.toString().startsWith("/")
                                 ? "file://" + modelData.icon
                                 : modelData.icon

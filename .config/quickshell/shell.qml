@@ -22,9 +22,34 @@ Scope {
 
     property var dismissNotification: function(index) {
         if (index >= 0 && index < sharedNotifList.count) {
+            const n = activeNotifications[index]
+            if (n) {
+                try { n.tracked = false } catch (e) {}
+            }
             activeNotifications.splice(index, 1) // Remove from memory
             sharedNotifList.remove(index)        // Remove from UI
         }
+    }
+
+    function notificationIcon(n) {
+        const img = n && n.image ? String(n.image) : ""
+        const app = n && n.appIcon ? String(n.appIcon) : ""
+        let raw = ""
+        if (app.startsWith("/"))
+            raw = app
+        else if (img.startsWith("image://icon/")) {
+            const rest = img.slice("image://icon/".length)
+            raw = rest.startsWith("/") ? rest : img
+        } else if (img.startsWith("file://") || img.startsWith("/"))
+            raw = img
+        else
+            raw = img || app
+
+        if (!raw)
+            return ""
+        if (raw.startsWith("/") || raw.startsWith("file://") || raw.startsWith("image://"))
+            return raw
+        return Quickshell.iconPath(raw, true) || ""
     }
 
     NotificationServer {
@@ -39,15 +64,19 @@ Scope {
         //inhibited: false 
 
         onNotification: (n) => {
+            // Quickshell discards the notification as soon as this handler
+            // returns unless tracked is set.
+            n.tracked = true
             activeNotifications.push(n)
 
-            console.log("Captured summary:", n.summary + " Captured image:", n.image + " Captured body:", n.body )
+            const icon = shellRoot.notificationIcon(n)
+            console.log("Captured summary:", n.summary, "Captured image:", icon, "Captured body:", n.body)
 
             // Manually save the data so it persists
             sharedNotifList.append({
                 "summary": n.summary,
                 "body": n.body,
-                "icon": n.image || "", // Handle empty icons.
+                "icon": icon,
                 "time": new Date().toLocaleTimeString(),
                 "popupVisible": true,
                 "refIndex": activeNotifications.length - 1 // Track where it is in the array
