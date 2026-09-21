@@ -417,7 +417,26 @@ stow_user() {
     fi
 
     log "Stowing (.bashrc)..."
+    # Pre-create this dir so Stow links only yazi.desktop, not all of ~/.local.
+    mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/applications"
     stow -v --target "$HOME" --restow home
+
+    set_yazi_file_manager
+}
+
+set_yazi_file_manager() {
+    local apps_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+
+    log "Setting Yazi as the default folder handler..."
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$apps_dir" 2>/dev/null || true
+    fi
+    if command -v xdg-mime >/dev/null 2>&1; then
+        xdg-mime default yazi.desktop inode/directory
+        sub_log "inode/directory -> yazi.desktop"
+    else
+        warn "xdg-mime not found; skip default file manager."
+    fi
 }
 
 stow_wallpapers() {
