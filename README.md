@@ -7,7 +7,7 @@ User configs in `~/.config` are symlinked with GNU Stow. System files under `/et
 ## Features
 
 - **Hyprland** built with new Lua configuration and per-monitor workspaces.
-- **Quickshell** QML-based UI (Status Bar, Login Screen, Lock Screen, and Workspace Preview).
+- **Quickshell** QML-based UI (App Launcher, Status Bar, Login Screen, Lock Screen, and Workspace Preview).
 - **Wallpaper Slideshow** with custom keybinds using awww.
 - **Display Manager** using greetd with Hyprland integration.
 - **Hardware Detection** installs drivers for every detected Intel, AMD, or supported NVIDIA GPU.
@@ -22,9 +22,9 @@ User configs in `~/.config` are symlinked with GNU Stow. System files under `/et
 
 ## Screenshots
 
-|                                 Status Bar & Blurred Windows                                  |                                       Rofi App Launcher                                       |
+|                                 Live Workspace Preview                                  |                                       Lumen App Launcher                                       |
 | :-------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------: |
-| <img src="./assets/desktop.png" /> | <img src="./assets/app-launcher.png" /> |
+| <img src="./assets/workspace-preview.png" /> | <img src="./assets/app-launcher.png" /> |
 |                                    **Popup Menu Buttons**                                     |                                    **Minimal Lockscreen**                                     |
 | <img src="./assets/popup.png" /> | <img src="./assets/lock-screen.png" /> |
 

@@ -11,3 +11,6 @@ PS1='[\u@\h \W]\$ '
 eval "$(zoxide init bash)" # change 'bash' to 'zsh' if you use Zsh
 
 fastfetch
+
+# Unity CLI
+case ":${PATH}:" in *:"$HOME/.local/bin":*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
