@@ -45,8 +45,6 @@ git-lfs
 cmake
 meson
 npm
-pi-coding-agent-bin
-pi-ext-web-access
 nwg-look
 gnome-themes-extra
 xdg-desktop-portal-hyprland
@@ -55,6 +53,8 @@ wf-recorder
 google-chrome
 
 [full]
+pi-coding-agent-bin
+pi-ext-web-access
 steam
 lutris
 prismlauncher

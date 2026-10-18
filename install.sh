@@ -416,31 +416,33 @@ stow_user() {
         mv "$bashrc_target" "$backup_dir/"
     fi
 
-    # Backup existing .pi (pi coding agent config) if it exists and isn't a symlink
-    local pi_target="$HOME/.pi"
-    if [ -e "$pi_target" ] && [ ! -L "$pi_target" ]; then
-        if [ $made_backup -eq 0 ]; then
-            mkdir -p "$backup_dir"
-            sub_log "Created backup directory: $backup_dir"
-            made_backup=1
-        fi
-
-        sub_log "Moving existing .pi to backup"
-        mv "$pi_target" "$backup_dir/"
-    fi
-
     log "Stowing (.bashrc)..."
     # Pre-create this dir so Stow links only yazi.desktop, not all of ~/.local.
     mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/applications"
     stow -v --target "$HOME" --restow home
 
-    log "Stowing (pi config)..."
-    stow -v --target "$HOME" --restow .pi
+    if [[ "${INSTALL_MODE:-}" == "full" ]]; then
+        # Backup existing .pi if it exists and isn't a symlink
+        local pi_target="$HOME/.pi"
+        if [ -e "$pi_target" ] && [ ! -L "$pi_target" ]; then
+            if [ $made_backup -eq 0 ]; then
+                mkdir -p "$backup_dir"
+                sub_log "Created backup directory: $backup_dir"
+                made_backup=1
+            fi
 
-    # Reinstall pi npm packages declared in .pi/agent/settings.json (agent/npm/ is not tracked)
-    if command -v pi >/dev/null 2>&1; then
-        sub_log "Reconciling pi packages..."
-        pi update --extensions || warn "pi package reconcile failed; run 'pi update --extensions' manually."
+            sub_log "Moving existing .pi to backup"
+            mv "$pi_target" "$backup_dir/"
+        fi
+
+        log "Stowing (pi config)..."
+        stow -v --target "$HOME" --restow pi
+
+        # Reinstall pi npm packages declared in ~/.pi/agent/settings.json (agent/npm/ is not tracked)
+        if command -v pi >/dev/null 2>&1; then
+            sub_log "Reconciling pi packages..."
+            pi update --extensions || warn "pi package reconcile failed; run 'pi update --extensions' manually."
+        fi
     fi
 
     set_yazi_file_manager
