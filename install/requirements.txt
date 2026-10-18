@@ -54,7 +54,6 @@ google-chrome
 
 [full]
 pi-coding-agent-bin
-pi-ext-web-access
 steam
 lutris
 prismlauncher

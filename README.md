@@ -99,7 +99,7 @@ SKIP_PACKAGES=1 ./install.sh
 - Automatically configures NVIDIA's open kernel modules only for device IDs in the pinned NVIDIA compatibility list.
 - Stops before NVIDIA-specific changes on older or unknown GPUs so the appropriate proprietary or legacy driver can be selected manually.
 - Scans for Bluetooth hardware and automatically enables bluetooth.service if found.
-- On the full install, installs the Pi coding agent (`pi-coding-agent-bin`, `pi-ext-web-access`) from the AUR and symlinks `~/.pi`.
+- On the full install, installs the Pi coding agent (`pi-coding-agent-bin`) from the AUR, symlinks `~/.pi`, and installs its npm packages, including `pi-web-access`.
 - Symlinks `~/.config` and `~/.bashrc` with Stow.
 - Copies system configs to `/etc` with rsync (requires sudo).
 - Installs wallpapers to `/usr/share/wallpapers`.
