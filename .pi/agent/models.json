@@ -1,0 +1,29 @@
+{
+  "providers": {
+    "llama-infra": {
+      "modelOverrides": {
+        "qwen3.8-27b-q8": {
+          "input": ["text", "image"],
+          "samplingParams": { "temperature": 1.0, "top_p": 0.95 },
+          "samplingParamsByThinkingLevel": {
+            "off": { "temperature": 0.7, "top_p": 0.8 }
+          }
+        },
+        "qwen3.8-27b-q6": {
+          "input": ["text", "image"],
+          "samplingParams": { "temperature": 1.0, "top_p": 0.95 },
+          "samplingParamsByThinkingLevel": {
+            "off": { "temperature": 0.7, "top_p": 0.8 }
+          }
+        },
+        "qwen3.8-27b-fp8": {
+          "input": ["text", "image"],
+          "samplingParams": { "temperature": 1.0, "top_p": 0.95 },
+          "samplingParamsByThinkingLevel": {
+            "off": { "temperature": 0.7, "top_p": 0.8 }
+          }
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 Arch Linux + Hyprland configuration files.
 
-User configs in `~/.config` are symlinked with GNU Stow. System files under `/etc` are copied by `install.sh`.
+User configs in `~/.config` and `~/.pi` are symlinked with GNU Stow. System files under `/etc` are copied by `install.sh`.
 
 ## Features
 
@@ -12,6 +12,7 @@ User configs in `~/.config` are symlinked with GNU Stow. System files under `/et
 - **Display Manager** using greetd with Hyprland integration.
 - **Hardware Detection** installs drivers for every detected Intel, AMD, or supported NVIDIA GPU.
 - **Neovim** Lua-based editor configuration with LSP and plugins.
+- **Pi** coding agent with web-access and custom model/llama-infra configuration.
 - **Simple Installation** just run the install.sh. 
 
 ## Video
@@ -98,7 +99,8 @@ SKIP_PACKAGES=1 ./install.sh
 - Automatically configures NVIDIA's open kernel modules only for device IDs in the pinned NVIDIA compatibility list.
 - Stops before NVIDIA-specific changes on older or unknown GPUs so the appropriate proprietary or legacy driver can be selected manually.
 - Scans for Bluetooth hardware and automatically enables bluetooth.service if found.
-- Symlinks `~/.config` with Stow.
+- Installs the Pi coding agent (`pi-coding-agent-bin`, `pi-ext-web-access`) from the AUR.
+- Symlinks `~/.config`, `~/.bashrc`, and `~/.pi` with Stow.
 - Copies system configs to `/etc` with rsync (requires sudo).
 - Installs wallpapers to `/usr/share/wallpapers`.
 

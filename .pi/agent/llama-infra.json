@@ -1,0 +1,20 @@
+{
+  "servers": [
+    {
+      "id": "ai-server",
+      "host": "192.168.1.25",
+      "label": "ai-server",
+      "ports": [8000],
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "prefixModelIds": false,
+    "maxOutputTokens": 16384
+  },
+  "modelOptions": {
+    "qwen3.8-27b-q8": { "maxTokens": 16384 },
+    "qwen3.8-27b-q6": { "maxTokens": 16384 },
+    "qwen3.8-27b-fp8": { "maxTokens": 16384 }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "defaultProvider": "llama",
+  "defaultModel": "qwen3.8-27b",
+  "defaultThinkingLevel": "medium",
+  "thinkingBudgets": {
+    "minimal": 1024,
+    "low": 2048,
+    "medium": 4096,
+    "high": 8192
+  },
+  "extensions": [
+    "/usr/share/pi/extensions"
+  ],
+  "packages": [
+    "npm:pi-markdown-preview",
+    "npm:pi-diff-review",
+    "npm:pi-llama-infra"
+  ],
+  "lastChangelogVersion": "1.3.0",
+  "hideThinkingBlock": true
+}
