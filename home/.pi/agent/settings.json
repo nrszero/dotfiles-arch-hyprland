@@ -12,7 +12,8 @@
     "npm:pi-web-access",
     "npm:pi-markdown-preview",
     "npm:pi-diff-review",
-    "npm:pi-llama-infra"
+    "npm:pi-llama-infra",
+    "npm:@juicesharp/rpiv-ask-user-question"
   ],
   "lastChangelogVersion": "1.3.0",
   "hideThinkingBlock": true
